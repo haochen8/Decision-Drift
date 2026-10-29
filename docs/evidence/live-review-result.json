@@ -1,0 +1,92 @@
+{
+  "appVersion": "2.2.0",
+  "environment": "development",
+  "issue": {
+    "commentCount": 1,
+    "description": {
+      "content": [
+        {
+          "attrs": {
+            "localId": "bed04ed85573"
+          },
+          "content": [
+            {
+              "text": "This synthetic work item tests Decision Drift. Add a reviewed source link as a comment. Keep this description unchanged.",
+              "type": "text"
+            }
+          ],
+          "type": "paragraph"
+        }
+      ],
+      "type": "doc",
+      "version": 1
+    },
+    "id": "10009",
+    "key": "DD-1",
+    "summary": "Validate reviewed source access"
+  },
+  "review": {
+    "body": {
+      "content": [
+        {
+          "content": [
+            {
+              "text": "Decision Drift — reviewed access spike",
+              "type": "text"
+            }
+          ],
+          "type": "paragraph"
+        },
+        {
+          "content": [
+            {
+              "text": "I reviewed Confluence page 557057 at version 1 from DD-1.",
+              "type": "text"
+            }
+          ],
+          "type": "paragraph"
+        },
+        {
+          "content": [
+            {
+              "text": "Source: https://decision-drift.atlassian.net/wiki/pages/viewpage.action?pageId=557057",
+              "type": "text"
+            }
+          ],
+          "type": "paragraph"
+        },
+        {
+          "content": [
+            {
+              "text": "This records an explicit review and verifies Jira write access. It does not certify requirements alignment.",
+              "type": "text"
+            }
+          ],
+          "type": "paragraph"
+        },
+        {
+          "content": [
+            {
+              "text": "Review ID: 04620db9-e451-4283-8d03-ab571f4aa10c",
+              "type": "text"
+            }
+          ],
+          "type": "paragraph"
+        }
+      ],
+      "type": "doc",
+      "version": 1
+    },
+    "commentId": "10003",
+    "created": "2026-10-29T20:32:30.579+0100",
+    "id": "04620db9-e451-4283-8d03-ab571f4aa10c",
+    "previewExpiresAt": "2026-10-29T20:41:39+01:00",
+    "url": "https://decision-drift.atlassian.net/browse/DD-1?focusedCommentId=10003"
+  },
+  "site": "https://decision-drift.atlassian.net",
+  "source": {
+    "accessVerified": "Forge asUser inspection in Incognito",
+    "id": "557057",
+    "version": 1
+  }
+}

@@ -1,0 +1,30 @@
+modules:
+  jira:issuePanel:
+    - key: decision-drift-spike
+      resource: main
+      render: native
+      resolver:
+        function: resolver
+      title: Decision Drift
+      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend.jsx
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - read:page:confluence
+    - storage:app
+app:
+  id: ari:cloud:ecosystem::app/e4d59fe8-4c16-485f-8206-bbd5072713dd
+  runtime:
+    name: nodejs22.x
+  compatibility:
+    jira:
+      required: true
+    confluence:
+      required: false
