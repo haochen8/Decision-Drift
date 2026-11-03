@@ -1,0 +1,134 @@
+{
+  "evidenceDate": "2026-11-03",
+  "timezone": "Europe/Stockholm",
+  "site": "https://decision-drift.atlassian.net",
+  "environment": "development",
+  "forgeVersion": "2.4.0",
+  "deploymentTimestamp": "2026-11-03T19:07:34.215Z",
+  "sourceCommit": "cf7c56c",
+  "storageIndex": "ACTIVE",
+  "installation": "Existing major version 2; Jira and Confluence connected; up to date",
+  "fixture": "Synthetic development data",
+  "issue": {
+    "id": "10042",
+    "key": "DD-2",
+    "requirementField": "description",
+    "requirementQuote": "CSV export is available to project members only.",
+    "descriptionUnchanged": true,
+    "commentsBefore": 0,
+    "commentsAfter": 0
+  },
+  "source": {
+    "id": "1605635",
+    "initialVersion": 1,
+    "finalPublishedVersion": 4,
+    "finalReviewedVersion": 4,
+    "initialQuote": "Constraint: Export is available to project members only.",
+    "finalQuote": "Constraint: Only project members may export CSV data."
+  },
+  "observations": [
+    {
+      "action": "Inspect both current documents and prepare a passage preview",
+      "publishedVersion": 1,
+      "bothServerVerifiedQuotesVisible": true,
+      "saveDisabledUntilExplicitApproval": true
+    },
+    {
+      "action": "Edit the source quote after approving the preview",
+      "previewDiscarded": true,
+      "approvalRevoked": true,
+      "replacementPreviewInitiallyUnapproved": true
+    },
+    {
+      "action": "Save explicitly reviewed passage link",
+      "sourceVersion": 1,
+      "reviewedAt": "2026-11-03T20:10:15+01:00",
+      "receipt": "Page 1605635 at version 1 is the saved comparison point for DD-2. No Jira comment was posted."
+    },
+    {
+      "action": "Full issue reload",
+      "sourceIdRestored": true,
+      "status": "unchanged",
+      "reviewedVersion": 1,
+      "publishedVersion": 1,
+      "bothExactUniqueQuotesRestored": true
+    },
+    {
+      "action": "Publish a rollout-only edit and recheck",
+      "publishedVersion": 2,
+      "reviewedVersion": 1,
+      "removed": "Rollout: The pilot begins in November.",
+      "added": "Rollout: The pilot begins in December.",
+      "status": "outside_scope",
+      "uiTitle": "Linked text matches; other content changed",
+      "bothExactUniquePassagesMatch": true,
+      "contextReviewStillRequired": true,
+      "exactHistoricalDiffVisible": true
+    },
+    {
+      "action": "Duplicate the source constraint and recheck",
+      "publishedVersion": 3,
+      "reviewedVersion": 1,
+      "status": "focus_ambiguous",
+      "sourceStatus": "ambiguous",
+      "requirementStatus": "unchanged"
+    },
+    {
+      "action": "Attempt to prepare the duplicated source passage",
+      "rejectedWith": "AMBIGUOUS_PASSAGE",
+      "noApprovablePreview": true
+    },
+    {
+      "action": "Replace the duplicated constraint with edited wording and recheck",
+      "publishedVersion": 4,
+      "reviewedVersion": 1,
+      "status": "focus_changed",
+      "sourceStatus": "changed_or_missing",
+      "requirementStatus": "unchanged",
+      "sourceSelectionLeftEmpty": true,
+      "reviewButtonDisabledUntilReselection": true,
+      "exactHistoricalDiffVisible": true,
+      "note": "The access constraint was reworded. This test establishes exact-text change detection, not a semantic-conflict assessment."
+    },
+    {
+      "action": "Explicitly select and approve the new source passage with the existing Jira criterion",
+      "sourceVersion": 4,
+      "reviewedAt": "2026-11-03T20:12:38+01:00",
+      "receipt": "Page 1605635 at version 4 is the saved comparison point for DD-2. No Jira comment was posted."
+    },
+    {
+      "action": "Full issue reload",
+      "sourceIdRestored": true,
+      "status": "unchanged",
+      "reviewedVersion": 4,
+      "publishedVersion": 4,
+      "bothExactUniqueQuotesRestored": true
+    },
+    {
+      "action": "Independent authenticated browser Jira API read after final save",
+      "descriptionJsonExactlyUnchanged": true,
+      "commentCount": 0
+    }
+  ],
+  "notVerifiedLive": [
+    "Moved source or Jira text",
+    "Unavailable or denied historical evidence",
+    "Denied-user access",
+    "Expired or stale review rejection",
+    "Simultaneous competing reviewers",
+    "Replay and uncertain transaction recovery",
+    "Separate-site production judge installation"
+  ],
+  "settingsChanges": {
+    "paymentMethodAdded": false,
+    "billingSettingsChanged": false,
+    "subscriptionsChanged": false,
+    "licensedSeatsChanged": false,
+    "scopesChanged": false,
+    "browserProtectionChanged": false
+  },
+  "privateScreenshotsRetainedLocally": [
+    "2026-11-03-passage-context-private.jpg",
+    "2026-11-03-passage-saved-private.jpg"
+  ]
+}

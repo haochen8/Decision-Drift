@@ -214,6 +214,22 @@ The existing fixture is already reviewed at version 2. For a **repeat run**, fir
 
 Record each observation and the deployed version in the status document. The November 3 core sequence passed on development 2.3.0, including initial baseline creation, conditional advancement, history comparison and reloads. See the [sanitized live evidence](evidence/2026-11-03-source-review.json). Separate live stale/expired/concurrent/denied-user/replay checks remain pending; the 56 local/runtime checks do not substitute for those cloud results.
 
+## Passage-link verification
+
+Use a separate synthetic issue and published page so the DD-1/page 557057 source-review fixture remains stable. The November 3 passage fixture is **DD-2** (`10042`) and **Decision Drift passage demo**, page **1605635**. Its initial Jira description includes `CSV export is available to project members only.`; the initial source contains `Constraint: Export is available to project members only.` and a separate November rollout sentence.
+
+1. Record the synthetic issue's description JSON and comment count before testing, using an authenticated read of `/rest/api/3/issue/DD-2?fields=description,comment`. Keep full responses and account data out of public evidence. Open DD-2 in Chrome Incognito and open **Decision Drift**. Check page `1605635`, then **Read current text**. Confirm the app displays the current Confluence text and Jira description.
+2. Enable **Link specific decision and requirement passages**. Copy the complete constraint sentence from Confluence and the acceptance-criterion sentence from the Jira description. Each selection must be exact, unique and 8–1,000 characters. The summary is not an eligible requirement field.
+3. Choose **Review linked passages**. Inspect both server-verified passages. The save button must stay disabled until the passage-link approval checkbox is selected. Changing either passage or the tracking mode must discard the preview and approval.
+4. Approve and **Save reviewed passage link**. Reload the whole Jira page, reopen the app and verify automatic source restoration, both matching passages, and the saved reviewed version. No Jira comment should be created and the description must stay unchanged.
+5. Edit only the source rollout sentence and publish a new version. Recheck: expect **Linked text matches; other content changed** with both passages appearing once. Review surrounding changes; this result does not establish that a contextual edit is semantically irrelevant.
+6. Duplicate the exact source constraint, publish, and recheck: expect an ambiguous link. A preview of that duplicated selection must fail; a reviewer must choose unique text. Then replace the duplicated constraint with edited wording and publish: expect **Linked decision or requirement needs review**, a verified earlier source passage, and no automatically selected replacement source quote. The November 3 run reworded it as `Constraint: Only project members may export CSV data.`; this tests exact-text changes, not semantic-conflict detection.
+7. Choose a fresh unique source passage explicitly, review both passages and save. Reload again to verify the advanced comparison point. Independently compare the Jira description and comment count with the values recorded before the sequence.
+
+Record actual versions, states, deployment version and limitations in [the status document](spike-status.md), with sanitized evidence only. Local tests cover moved text, unavailable evidence, stale/expired approvals, replay and competing reviewers; these do not substitute for separate live checks. Never change product subscriptions, billing, payment methods or licensed seats to run this sequence.
+
+The November 3 sequence above passed on development **2.4.0**: page 1605635 moved through published versions 1–4 and is now reviewed at **version 4**. Both full reloads restored the saved passage pair. The final independent Jira read confirmed the original DD-2 description was exactly unchanged and comments stayed **0 → 0**. [Sanitized passage evidence](evidence/2026-11-03-passage-review.json). For a repeat run, create a new pair or explicitly review the current version before changing it; the existing fixture no longer starts at version 1.
+
 ## Judge installation later
 
 After the live spike passes, deploy the reviewed build to production:

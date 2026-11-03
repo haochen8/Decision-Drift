@@ -2,20 +2,49 @@
 
 ## Current feature evidence — November 3, 2026
 
-Current implementation: **exact source-to-Jira-description passage linking is implemented locally; cloud deployment and live verification are pending**. This has not changed the deployed version recorded below. The planned fresh synthetic DD-2 fixture will preserve DD-1 and its page 557057/version 2 reviewed baseline.
+Current status: **the core exact source-to-Jira-description passage-link sequence PASSED live in Chrome Incognito on development version 2.4.0**. Source commit [cf7c56c](https://github.com/haochen8/Decision-Drift/commit/cf7c56c) is pushed. The fresh DD-2/page 1605635 fixture passed explicit passage save, full-reload restoration, preview-approval invalidation, context-change reporting, duplicate rejection and explicit rereview of edited linked text. Its final published/reviewed source version is **4/4**; an independent Jira API comparison confirmed the description was exactly unchanged and comments stayed at **0**. DD-1/page 557057/version 2 was not edited.
 
-Verified deployment: **the persistent source-review create, advance, reopen and historical-diff sequence PASSED live in Chrome Incognito on development version 2.3.0**. The operator explicitly reviewed and saved source version 1, verified automatic restoration after a full issue reload, published one synthetic constraint change as version 2, inspected the exact historical text difference, reviewed version 2 and verified restoration again. An independent Jira API read confirmed the original description was exactly unchanged and the only comment remained `10003`. Source page `557057` is now published and reviewed at **version 2**. The source change [1c8adab](https://github.com/haochen8/Decision-Drift/commit/1c8adab) was pushed to [haochen8/Decision-Drift](https://github.com/haochen8/Decision-Drift). October 29 evidence remains separately dated below.
+Earlier November 3 result: **the persistent source-review create, advance, reopen and historical-diff sequence PASSED live in Chrome Incognito on development version 2.3.0**. The operator explicitly reviewed and saved source version 1, verified automatic restoration after a full issue reload, published one synthetic constraint change as version 2, inspected the exact historical text difference, reviewed version 2 and verified restoration again. An independent Jira API read confirmed the original description was exactly unchanged and the only comment remained `10003`. Source page `557057` remains published and reviewed at **version 2**. The source change [1c8adab](https://github.com/haochen8/Decision-Drift/commit/1c8adab) was pushed to [haochen8/Decision-Drift](https://github.com/haochen8/Decision-Drift). October 29 evidence remains separately dated below.
 
-### Passage-link implementation — live verification pending
+### Passage-link implementation and review
 
 - A reviewer selects an exact, unique Confluence decision passage and an exact, unique requirement passage from the **Jira description only**. Both are checked on the server against complete supported text; Jira summary text is not a requirement field for this feature.
 - Durable focus metadata stores `schemaVersion`, `requirementField: description`, offsets, lengths and passage hashes. It stores no source or Jira passage plaintext. The existing metadata-only reviewed baseline and current-user permission checks remain in use.
 - Checks recover exact, unique text after it shifts position. Edited or missing passages need review; duplicates are ambiguous; incomplete or inaccessible current text and unverifiable source history make the link unavailable. These outcomes must not be presented as established decision alignment.
 - `outside_scope` is displayed as **Context changed**: both exact passages still appear once, but other content or version context changed. The reviewer must inspect surrounding changes. This status does not guarantee that a surrounding change is semantically irrelevant.
 - Each preview requires explicit approval of its scope and passages. Editing either passage or switching between passage and whole-page tracking clears that preview and its approval; replacing an existing passage link with whole-page tracking requires a fresh review.
-- All 97 local checks passed: 15 original comment-spike, 40 reviewed-source/passage integration, 9 passage matching, 9 source parsing and 24 real bundled React/UI Kit journeys. Compilation, official Forge lint and whitespace checks passed. Independent backend and product-flow reviews found and fixed storage-key-order equality, incomplete preview-scope validation and recovery-copy issues. Product/storage boundaries are simulated locally; no new cloud deployment or live passage-link result is claimed here.
+- All 97 local checks passed: 15 original comment-spike, 40 reviewed-source/passage integration, 9 passage matching, 9 source parsing and 24 real bundled React/UI Kit journeys. Compilation, official Forge lint and whitespace checks passed. Independent backend and product-flow reviews found and fixed storage-key-order equality, incomplete preview-scope validation and recovery-copy issues. Product/storage boundaries are simulated locally; the observed live results are recorded separately below.
 
-The planned live sequence uses a fresh synthetic DD-2 issue/source pair to check passage save/reopen, context-only and linked-passage changes, movement, duplicate/unavailable evidence and approval invalidation. DD-1/page 557057 remains the separately verified version 2 source-review fixture. No external AI service is needed for passage matching.
+### November 3 version 2.4.0 verification evidence
+
+| Check | Status | Observed evidence and limit |
+| --- | --- | --- |
+| Source change | Pushed | Commit `cf7c56c`, exact decision-to-description passage linking |
+| Local checks and review | Passed | 97 tests, compilation and official Forge lint; independent review findings fixed as described above |
+| Development deployment | Passed — CLI success | Version `2.4.0`, deployed `2026-11-03T19:07:34.215Z` / 20:07:34.215 CET |
+| Custom Entity and installation | Active / up to date | `decision-baseline` index ACTIVE; existing installation `7ca78514-4089-4bc2-b3fa-969ef8f72a46` at major version 2, Jira and Confluence connected; same scopes |
+| Fresh synthetic fixture | Created and inspected | Jira `DD-2`, ID `10042`; source `1605635`, title **Decision Drift passage demo**; DD-1/page 557057 not edited |
+| Version 1 passage save | Passed — explicit approval | Source constraint linked to Jira description passage; save receipt at **20:10:15 CET** |
+| Version 1 durable restoration | Passed — full issue reload | Source ID and exact linked quotes restored automatically, reviewed/published `1/1` |
+| Preview approval invalidation | Passed — native UI | Save enabled only after checking approval; editing the source quote revoked preview and approval; the fresh preview started unapproved |
+| Version 2 context change | Passed — live recheck | Rollout changed November to December; both linked passages remained exact and unique; `outside_scope` / Context changed and the historical rollout difference displayed |
+| Version 3 duplicate constraint | Passed — ambiguity gate | Duplicating the linked source constraint produced `focus_ambiguous`; Review linked passages failed with `AMBIGUOUS_PASSAGE` and no approval |
+| Version 4 edited linked text | Passed — review required | Reworded constraint produced `focus_changed`; current source selection was empty, Jira quote freshly matched and historical text difference displayed |
+| Version 4 explicit rereview | Passed — new selection and approval | New constraint explicitly paired with the same Jira description passage and saved at **20:12:38 CET** |
+| Version 4 durable restoration | Passed — full issue reload | Source and exact new quotes automatically restored; reviewed/published `4/4`, unchanged |
+| Jira unchanged by passage reviews | Passed — independent authenticated browser API comparison | DD-2 description JSON exactly equal before/after; comment count remained `0` |
+| Live moved-text and unavailable/denied evidence | Not run | Local coverage does not establish these live cases |
+| Live stale/expired/concurrent/replay cases | Not run | No live result claimed for stale or expired reviews, conflicting reviewers, replay or uncertain transaction recovery |
+| Billing, licensing, scopes and security settings | Unchanged | No billing, payment, product-seat, subscription, scope or security-setting change; no external model service |
+
+The version 4 source edit was:
+
+```diff
+-Constraint: Export is available to project members only.
++Constraint: Only project members may export CSV data.
+```
+
+The reviewer explicitly linked the new source text to the unchanged Jira description passage, `CSV export is available to project members only.` Exact matching detected the wording change; it did not determine semantic agreement. The final review timestamp is **2026-11-03 20:12:38 CET**. See the [sanitized live passage-review record](evidence/2026-11-03-passage-review.json). No Jira comment was created by either baseline save. No external AI service was used for passage matching.
 
 ### Live-verified version 2.3.0 behavior and review
 
@@ -70,7 +99,11 @@ Earlier in this run, a browser-control call aborted before dispatch and a fresh 
 
 The core [Persistent source review verification](atlassian-setup.md#persistent-source-review-verification) sequence is complete on this development site. No additional Jira comment was required or created. Live concurrency, replay, expired/stale approvals, denied-user behavior and separate-site production judge installation remain later verification work; they are not marked passed by this sequence.
 
-Passage linking is now implemented locally as described above; its review, final checks, deployment and fresh DD-2 live evidence remain pending. The next planned feature is a [bounded release review queue](../README.md#next-features-and-winning-strategy) that re-reads each linked issue and source under the viewer's current permissions and offers explicit review actions. It will use exact text evidence and manual review, with no AI service or semantic-conflict claim.
+The core [passage review](../README.md#verification-status) sequence is complete on DD-2/page 1605635 at version 4. Live moved-text, unavailable/denied-evidence, stale/expired, concurrent and replay checks remain pending alongside production judge installation.
+
+The next planned feature is a [selected review queue](../README.md#next-features-and-winning-strategy), a read-only native Jira project page for at most eight unique issue keys selected manually from the current project. The server will resolve each key as the viewer, verify its project and derive its issue ID before bounded current-permission source checks. Rows will show an authorized summary, reviewed/current versions, an Open issue action and one of Matches review, Context changed, Needs review, Source not linked or Could not verify. This is a bounded selection, not complete release coverage or a release-readiness verdict.
+
+MVP acceptance requires minimal responses with no source bodies or hashes, partial row errors, clearing old results after selection edits or refresh, and ignoring late results for obsolete selections. There will be no queue-wide approval; each issue keeps the existing explicit review flow. Persistent private named selections, storing issue IDs only, are a possible later extension. The queue is planned, not implemented, and needs no AI service.
 
 ## Historical record — October 29, 2026
 
