@@ -2,7 +2,7 @@
 
 ## Current feature evidence — November 3, 2026
 
-Current status: **persistent reviewed-source tracking is deployed as development version 2.3.0; live verification awaits the user's Atlassian sign-in in the newly opened Incognito window**. The user explicitly approved resuming browser control, and read-only native Chrome/direct browser access now works. The private window is at Atlassian sign-in, so the new form, baseline save/reopen and history journey remain unverified. The source change [1c8adab](https://github.com/haochen8/Decision-Drift/commit/1c8adab) was pushed to [haochen8/Decision-Drift](https://github.com/haochen8/Decision-Drift). The successful October 29 flow below applies to version 2.2.0, not the new feature.
+Current status: **the persistent source-review create, advance, reopen and historical-diff sequence PASSED live in Chrome Incognito on development version 2.3.0**. The operator explicitly reviewed and saved source version 1, verified automatic restoration after a full issue reload, published one synthetic constraint change as version 2, inspected the exact historical text difference, reviewed version 2 and verified restoration again. An independent Jira API read confirmed the original description was exactly unchanged and the only comment remained `10003`. Source page `557057` is now published and reviewed at **version 2**. The source change [1c8adab](https://github.com/haochen8/Decision-Drift/commit/1c8adab) was pushed to [haochen8/Decision-Drift](https://github.com/haochen8/Decision-Drift). October 29 evidence remains separately dated below.
 
 ### Implemented behavior and review
 
@@ -24,24 +24,38 @@ The feature uses the existing scopes and adds no external model service. No mode
 | Local manifest/compilation check | Passed | `npm run check` |
 | Official Forge lint | Passed | Official Forge linter reported no issues |
 | Development deployment | Passed — CLI success | Version `2.3.0`, deployed `2026-11-03T17:17:59.773Z` / 18:17:59.773 CET |
-| Custom Entity readiness | Active | `decision-baseline` entity, `by-key` index **ACTIVE**; provisioning is not proof of a successful live baseline transaction |
+| Custom Entity readiness | Active | `decision-baseline` entity, `by-key` index **ACTIVE**; actual create/advance and persistence results are separately recorded below |
 | Existing installation | Up to date at major version 2 | Installation `7ca78514-4089-4bc2-b3fa-969ef8f72a46`, Jira required and Confluence connected |
-| Browser-control availability | Available — read-only access verified | User explicitly approved resuming control; native Chrome and direct browser reads work |
-| Current Jira fixture baseline | Confirmed — authenticated normal-browser API read | Issue `10009` / `DD-1`; original description exactly unchanged; one comment, ID `10003` only. This is a browser-session read, not new Forge resolver evidence |
-| Fresh Incognito authentication | Awaiting user completion | Approved Chrome shortcut opened a private window and navigated to DD-1; Atlassian sign-in is displayed, with no authenticated private session yet |
-| Version 2.3.0 native browser UI | Pending — sign-in prerequisite | The new Incognito form is not yet verified; refreshing the authenticated normal profile shows loading rather than controls |
-| Actual baseline save and reopen | Pending — not performed | No live `confirmBaseline` receipt, durable save or automatic-restoration result recorded |
-| Actual page edit and history comparison | Pending — not performed | No new synthetic page edit, changed-source view or verified historical line comparison recorded |
-| Live conditional baseline conflict/replay | Pending | Local coverage does not verify the deployed Custom Entity transaction behavior |
+| Browser control and Incognito authentication | Available — live sequence performed | User explicitly approved resuming control; the operator used the authenticated native Chrome Incognito form |
+| Version 2.3.0 native browser UI | Passed in Incognito | Actual source inspection, review, save, recheck and full-reload restoration were operated; normal-profile loading remains unresolved |
+| Fresh source inspection | Passed — live Forge UI | Page `557057` initially showed Not reviewed, published version 1 and the exact synthetic source body |
+| Version 1 baseline save | Passed — explicit approval | Review version 1 displayed; Save reviewed version disabled with checkbox unchecked; after review/approval one save returned a version 1 receipt at **19:00:53 CET** |
+| Version 1 durable restoration | Passed — full issue reload | Cmd+R automatically restored source ID `557057`, Source unchanged since review, reviewed/published `1/1` and the same review timestamp; no page ID retyping |
+| Synthetic page publication | Passed — Confluence editor and published page | Only the constraint changed from project admins only to project members only; Update/Uppdatera published version 2, with updated notification and new body verified |
+| Historical source comparison | Passed — live app recheck | Source changed since review, reviewed/published `1/2`; What Changed displayed the exact removed admin-only line and added member-only line after the historical page/version/hash checks |
+| Version 2 baseline save | Passed — explicit approval | Review version 2, checkbox approval and one save returned a version 2 receipt at **19:04:19 CET**, explicitly saying no Jira comment was posted |
+| Version 2 durable restoration | Passed — full issue reload | Cmd+R automatically restored `557057`, Source unchanged since review, reviewed/published `2/2` and the same 19:04:19 review timestamp |
+| Jira unchanged by baseline saves | Passed — independent authenticated browser API comparison | Issue `10009` / `DD-1`; description JSON exactly equal before/after; comment count stayed `1`, with only ID `10003` |
+| Live concurrent/conflicting reviewers and replay | Not run | Successful baseline create/advance does not establish competing-reviewer, replay or uncertain-transaction recovery behavior |
+| Live expired/stale/denied-user cases | Not run | Local coverage remains separate; no live result claimed for these cases |
 | Billing, licensing and scopes | Unchanged | No additional model service, payment, billing, seat, subscription or scope change |
 
-An earlier browser-control call aborted **before dispatch**; that is historical tool evidence, not an app failure. Browser access now works. The current prerequisite is authentication in the fresh Incognito window, not browser-control approval or a failed baseline transaction. The user has been asked to complete sign-in there and reply **Signed in**; that reply is still awaited.
+The exact synthetic edit, with the title, CSV-export decision and synthetic-evidence line unchanged, was:
 
-No baseline confirmation, Confluence edit/publication or new Jira comment has occurred in this verification attempt. The current independent Jira read establishes the one-comment baseline before proceeding. No live version 2.3.0 save/reopen/history journey is marked passed.
+```diff
+-Constraint: Export is available to project admins only.
++Constraint: Export is available to project members only.
+```
+
+The version 1 save receipt identified page `557057` as the comparison point for `DD-1` and said no Jira comment was posted; the version 2 receipt did the same for version 2. Both saves were followed by full issue reloads, not just reuse of the in-memory screen. The final state is published/reviewed version **2/2**, with the member-only constraint and last review at **2026-11-03 19:04:19 CET**.
+
+See the [sanitized live source-review record](evidence/2026-11-03-source-review.json). Private screenshots remain ignored and local: `docs/evidence/2026-11-03-baseline-v1-private.jpg`, `docs/evidence/2026-11-03-source-drift-private.jpg` and `docs/evidence/2026-11-03-baseline-v2-private.jpg`. They are not public evidence attachments or commit inputs.
+
+Earlier in this run, a browser-control call aborted before dispatch and a fresh Incognito window required sign-in. Those prerequisites were resolved before the live sequence above. The normal-profile loading problem remains unexplained; the successful Incognito run does not identify an extension or setting as its cause.
 
 ### Next verification and feature
 
-After the user completes Atlassian sign-in in the already-open Incognito window and confirms it, resume [Persistent source review verification](atlassian-setup.md#persistent-source-review-verification): inspect the actual source version, explicitly save it, reopen the issue, edit only the synthetic Confluence page, inspect the change/history, review the new version and reopen again. Record actual versions/outcomes and compare Jira's description/comment count against the current baseline. A metadata-only baseline save does not require posting another Jira comment. Sign-in credentials stay with the user and are not part of the evidence record.
+The core [Persistent source review verification](atlassian-setup.md#persistent-source-review-verification) sequence is complete on this development site. No additional Jira comment was required or created. Live concurrency, replay, expired/stale approvals, denied-user behavior and separate-site production judge installation remain later verification work; they are not marked passed by this sequence.
 
 The next planned feature is [relevant decision passage mapping](../README.md#next-features-and-winning-strategy): select an exact source passage, map it to a Jira requirement and distinguish an edit to that passage from an unrelated page edit. It is planned, not implemented or live-verified by this update.
 

@@ -1,0 +1,92 @@
+{
+  "evidenceDate": "2026-11-03",
+  "timezone": "Europe/Stockholm",
+  "site": "https://decision-drift.atlassian.net",
+  "environment": "development",
+  "forgeVersion": "2.3.0",
+  "sourceCommit": "1c8adab",
+  "fixture": "Synthetic development data",
+  "issue": {
+    "id": "10009",
+    "key": "DD-1",
+    "descriptionUnchanged": true,
+    "commentsBefore": 1,
+    "commentsAfter": 1,
+    "commentIds": [
+      "10003"
+    ]
+  },
+  "source": {
+    "id": "557057",
+    "initialVersion": 1,
+    "finalPublishedVersion": 2,
+    "finalReviewedVersion": 2
+  },
+  "observations": [
+    {
+      "action": "Inspect source",
+      "status": "unreviewed",
+      "publishedVersion": 1
+    },
+    {
+      "action": "Save explicitly reviewed version",
+      "sourceVersion": 1,
+      "reviewedAt": "2026-11-03T19:00:53+01:00",
+      "receipt": "Page 557057 at version 1 is the saved comparison point for DD-1. No Jira comment was posted."
+    },
+    {
+      "action": "Full issue reload",
+      "sourceIdRestored": true,
+      "status": "unchanged",
+      "reviewedVersion": 1,
+      "publishedVersion": 1
+    },
+    {
+      "action": "Publish synthetic source change",
+      "publishedVersion": 2,
+      "removed": "Constraint: Export is available to project admins only.",
+      "added": "Constraint: Export is available to project members only."
+    },
+    {
+      "action": "Recheck source",
+      "status": "source_changed",
+      "reviewedVersion": 1,
+      "publishedVersion": 2,
+      "exactHistoricalRemovedAndAddedTextVisible": true,
+      "historicalAccess": "Forge asUser with exact page/version/hash verification"
+    },
+    {
+      "action": "Save explicitly reviewed version",
+      "sourceVersion": 2,
+      "reviewedAt": "2026-11-03T19:04:19+01:00",
+      "receipt": "Page 557057 at version 2 is the saved comparison point for DD-1. No Jira comment was posted."
+    },
+    {
+      "action": "Full issue reload",
+      "sourceIdRestored": true,
+      "status": "unchanged",
+      "reviewedVersion": 2,
+      "publishedVersion": 2
+    },
+    {
+      "action": "Independent authenticated browser Jira API read",
+      "commentCount": 1,
+      "commentIds": [
+        "10003"
+      ],
+      "descriptionUnchanged": true
+    }
+  ],
+  "notVerifiedLive": [
+    "Simultaneous competing reviewers",
+    "Expired review rejection",
+    "Stale review rejection",
+    "Denied-user access",
+    "Replay and uncertain transaction recovery"
+  ],
+  "privateScreenshotsRetainedLocally": [
+    "2026-11-03-baseline-v1-private.jpg",
+    "2026-11-03-source-drift-private.jpg",
+    "2026-11-03-baseline-v2-private.jpg"
+  ]
+}

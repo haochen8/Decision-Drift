@@ -203,14 +203,16 @@ This feature stores one shared source-review baseline per Jira issue in the `dec
 
 Use the existing synthetic issue **DD-1** and source page **557057** in Chrome Incognito. This sequence saves review metadata and edits only the synthetic source page; it does not require another Jira comment.
 
+The existing fixture is already reviewed at version 2. For a **repeat run**, first verify automatic restoration of page 557057 with reviewed/published versions 2/2 and record Jira's current description/comment count, then continue at **step 4**. The first-time save path in steps 1–3 applies to a fresh unreviewed synthetic fixture; substitute its actual issue/page IDs. An unchanged fixture shows a disabled **Current version reviewed** button, so it does not need another save.
+
 1. Open the Decision Drift issue panel. Enter `557057` and select **Check source**. Record the actual published version; do not assume it is still version 1.
 2. Select **Review current version**, inspect the source, select the approval checkbox, and select **Save reviewed version**. Confirm the receipt identifies the saved version and says no Jira comment was posted.
 3. Reopen the issue. The source must restore automatically, with the same reviewed and published versions and **Source unchanged since review**. Confirm that the Jira description and comment count have not changed.
-4. Edit the synthetic Confluence page's constraint from project admins only to project members, then publish the next version. Do not edit the Jira issue. Recheck the tracked source: it must report **Source changed since review**, show the old and current versions, and display verified removed/added text when history is accessible. An unavailable comparison must remain a warning.
+4. Change the synthetic Confluence page's constraint to a different value from its current one, for example between project-admins-only and project-members-only, then publish the next version. The November 3 run left it at project-members-only/version 2, so another run must make an actual new change. Do not edit the Jira issue. Recheck the tracked source: it must report **Source changed since review**, show the old and current versions, and display verified removed/added text when history is accessible. An unavailable comparison must remain a warning.
 5. Review and explicitly save the new source version. Reopen again and verify the unchanged state. The optional **Preview source-link note** action is separate and is not needed for this test.
-6. For a separate stale-review check, prepare a review, edit/publish the synthetic page again, and then confirm the old preview. Expect `STALE_PREVIEW`; the prior saved review must remain in effect. Reload and prepare a fresh review.
+6. For a separate stale-review check after the source is marked unchanged, publish one new synthetic edit, recheck and prepare its review, then publish a second edit before confirming that preview. Expect `STALE_PREVIEW`; the prior saved review must remain in effect. Reload and prepare a fresh review of the latest published version.
 
-Record each observation and the deployed version in the status document. Until these steps are actually performed, report them as pending. The 56 current local/runtime checks cover these behaviors but do not substitute for live Custom Entity and history API verification.
+Record each observation and the deployed version in the status document. The November 3 core sequence passed on development 2.3.0, including initial baseline creation, conditional advancement, history comparison and reloads. See the [sanitized live evidence](evidence/2026-11-03-source-review.json). Separate live stale/expired/concurrent/denied-user/replay checks remain pending; the 56 local/runtime checks do not substitute for those cloud results.
 
 ## Judge installation later
 
