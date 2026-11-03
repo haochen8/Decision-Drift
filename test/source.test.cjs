@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { adfText, sourceFromPage } = require('../src/spike.cjs');
+const { adfText, sourceFromPage, issueEvidenceText, publicView } = require('../src/spike.cjs');
 
 const document = text => ({ type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] });
 const page = doc => ({ id: '123', title: 'Decision', status: 'current', version: { number: 2 }, body: { atlas_doc_format: { value: JSON.stringify(doc) } } });
@@ -49,4 +49,27 @@ test('historical reads accept only the exact requested published version', () =>
   assert.throws(() => sourceFromPage(historical, 'https://test.atlassian.net'), { code: 'UNPUBLISHED_PAGE' });
   assert.throws(() => sourceFromPage(historical, 'https://test.atlassian.net', { expectedVersion: 1 }), { code: 'UNPUBLISHED_PAGE' });
   assert.throws(() => sourceFromPage({ ...historical, status: 'draft' }, 'https://test.atlassian.net', { expectedVersion: 2 }), { code: 'UNPUBLISHED_PAGE' });
+});
+
+test('requirement evidence contains the complete description with explicit field boundaries', () => {
+  const description = document('Acceptance criteria: export for project members only.');
+  assert.equal(issueEvidenceText({ summary: 'A different requirement', description }), 'Acceptance criteria: export for project members only.');
+  assert.equal(issueEvidenceText({ description: null }), '');
+  assert.equal(issueEvidenceText({ description: document('x'.repeat(16000)) }).length, 16000);
+});
+
+test('unsupported Jira descriptions cannot be used as complete passage evidence', () => {
+  for (const description of [
+    { text: 'Legacy partial text' }, document('x'.repeat(16001)),
+    { ...document('See attachment'), content: [...document('See attachment').content, { type: 'media', attrs: { id: 'private' } }] },
+    { ...document('Broken'), content: [{ type: 'paragraph', content: {} }] }
+  ]) assert.throws(() => issueEvidenceText({ description }), { code: 'UNSUPPORTED_ISSUE' });
+});
+
+test('whole-page checks remain available when Jira text cannot be represented completely', () => {
+  const source = sourceFromPage(page(document('A supported decision')), 'https://test.atlassian.net');
+  const view = publicView({ issue: { key: 'DD-1', summary: 'Review', description: { text: 'legacy' } }, source, origin: 'https://test.atlassian.net' });
+  assert.equal(view.issue.textComplete, false);
+  assert.equal(view.issue.text, '');
+  assert.equal(view.source.text, 'A supported decision');
 });

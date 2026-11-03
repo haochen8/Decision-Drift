@@ -339,3 +339,270 @@ test('corrupt baseline metadata fails closed rather than reporting an unreviewed
   f.baselines.get(BASELINE_KEY).sourceHash = 'invalid';
   await rejectsCode(f.service.loadTrackedSource(context), 'INVALID_BASELINE');
 });
+
+const sourcePassage = 'Export links expire after seven days.';
+const requirementPassage = 'Expire every exported download link.';
+const description = text => ({ type: 'doc', version: 1, content: text.split('\n').map(value => ({
+  type: 'paragraph', content: [{ type: 'text', text: value }]
+})) });
+function passageFixture() {
+  const f = fixture();
+  f.setSource(makeSource(`Decision introduction.\n${sourcePassage}\nOther source detail.`));
+  f.issue.description = description(`Acceptance criteria.\n${requirementPassage}\nOther requirement detail.`);
+  return f;
+}
+const preparePassage = (f, actor = context, overrides = {}) => f.service.prepareBaseline(actor, {
+  pageInput: '12345', mode: 'passage', sourceQuote: sourcePassage,
+  requirementQuote: requirementPassage, ...overrides
+});
+async function capturePassage(f) { return confirm(f, await preparePassage(f)); }
+
+test('passage preview and durable baseline retain fingerprints only and reload fresh exact evidence', async () => {
+  const f = passageFixture(); const preview = await preparePassage(f);
+  assert.deepEqual(preview.reviewScope, { mode: 'passage', sourceQuote: sourcePassage, requirementQuote: requirementPassage });
+  const result = await confirm(f, preview);
+  assert.equal(result.tracking.status, 'unchanged');
+  assert.equal(result.tracking.focus.status, 'unchanged');
+  assert.equal(result.tracking.focus.reviewedSourceQuote, sourcePassage);
+  assert.equal(result.tracking.focus.currentRequirementQuote, requirementPassage);
+  assert.equal(f.baselines.get(BASELINE_KEY).focus.requirementField, 'description');
+  const persisted = JSON.stringify([...f.records.values(), ...f.baselines.values()]);
+  for (const text of [sourcePassage, requirementPassage, 'Decision introduction.', 'Acceptance criteria.']) assert.ok(!persisted.includes(text));
+  f.records.clear(); f.advance(2 * 24 * 60 * 60 * 1000);
+  assert.equal((await f.reload().loadTrackedSource(otherReviewer)).tracking.focus.currentRequirementQuote, requirementPassage);
+  assert.equal(f.historyCalls.length, 0);
+});
+
+test('passage mode rejects invalid, unmatched, duplicate, summary-only, and unsupported quotations without writing', async () => {
+  for (const [overrides, code] of [
+    [{ sourceQuote: 'short' }, 'INVALID_PASSAGE'],
+    [{ requirementQuote: 'missing requirement text' }, 'PASSAGE_NOT_FOUND'],
+    [{ requirementQuote: 'Build export links' }, 'PASSAGE_NOT_FOUND'],
+    [{ sourceQuote: 'x'.repeat(1001) }, 'INVALID_PASSAGE'],
+    [{ mode: 'invented' }, 'INVALID_MODE']
+  ]) {
+    const f = passageFixture(); await rejectsCode(preparePassage(f, context, overrides), code);
+    assert.equal(f.records.size, 0); assert.equal(f.writes(), 0);
+  }
+  const duplicate = passageFixture(); duplicate.issue.description = description(`${requirementPassage}\n${requirementPassage}`);
+  await rejectsCode(preparePassage(duplicate), 'AMBIGUOUS_PASSAGE');
+  const richSource = passageFixture(); richSource.sources.get('12345').hasUnrepresentedContent = true;
+  await rejectsCode(preparePassage(richSource), 'UNSUPPORTED_FOCUS');
+  const richIssue = passageFixture(); richIssue.issue.description = { text: requirementPassage };
+  await rejectsCode(preparePassage(richIssue), 'UNSUPPORTED_ISSUE');
+  // Whole-page reviews keep their previous behavior on unsupported Jira text.
+  await confirm(richIssue, await prepare(richIssue));
+  assert.equal(richIssue.writes(), 1);
+});
+
+test('a link can be added, changed, and explicitly removed on otherwise unchanged documents', async () => {
+  const f = passageFixture(); await capture(f);
+  await capturePassage(f);
+  assert.equal(f.baselines.get(BASELINE_KEY).revision, 2);
+  const changed = await preparePassage(f, context, { sourceQuote: 'Other source detail.', requirementQuote: 'Other requirement detail.' });
+  await confirm(f, changed);
+  assert.equal(f.baselines.get(BASELINE_KEY).revision, 3);
+  assert.equal((await f.service.loadTrackedSource(context)).tracking.focus.currentSourceQuote, 'Other source detail.');
+  await rejectsCode(prepare(f), 'FOCUS_REVIEW_REQUIRED');
+  const page = await f.service.prepareBaseline(context, { pageInput: '12345', mode: 'page' });
+  assert.deepEqual(page.reviewScope, { mode: 'page', sourceQuote: null, requirementQuote: null });
+  await confirm(f, page);
+  assert.equal(f.baselines.get(BASELINE_KEY).revision, 4);
+  assert.equal(f.baselines.get(BASELINE_KEY).focus, undefined);
+  assert.equal((await f.service.loadTrackedSource(context)).tracking.focus, null);
+});
+
+test('linked text remains literal evidence when surrounding negation, summaries, or positions change', async () => {
+  const f = passageFixture(); await capturePassage(f);
+  f.setSource(makeSource(`Deprecated — do not implement.\n${f.sources.get('12345').text}`, 2));
+  f.issue.summary = 'Do not implement old exports';
+  f.issue.description = description(`New requirement introduction.\n${requirementPassage}\nChanged other requirement.`);
+  const result = await f.service.loadTrackedSource(context);
+  assert.equal(result.tracking.status, 'outside_scope');
+  assert.equal(result.tracking.sourceChanged, true);
+  assert.equal(result.tracking.issueChanged, true);
+  assert.equal(result.tracking.focus.status, 'unchanged');
+  assert.equal(result.tracking.focus.currentRequirementQuote, requirementPassage);
+  assert.equal(f.historyCalls.length, 1, 'diff and source anchor share one historical read');
+  assert.ok(result.tracking.diff.added.includes('Deprecated — do not implement.'));
+});
+
+test('a version-only focused change needs no history; a comment timestamp creates no drift', async () => {
+  const f = passageFixture(); await capturePassage(f);
+  f.issue.updated = '2026-11-03T12:00:00Z';
+  assert.equal((await f.service.loadTrackedSource(context)).tracking.status, 'unchanged');
+  f.setSource(makeSource(f.sources.get('12345').text, 2));
+  assert.equal((await f.service.loadTrackedSource(context)).tracking.status, 'outside_scope');
+  assert.equal(f.historyCalls.length, 0);
+});
+
+test('edited or deleted linked text needs review without inventing an earlier Jira quote', async () => {
+  const f = passageFixture(); await capturePassage(f);
+  f.issue.description = description('Export links remain available indefinitely.');
+  let result = await f.service.loadTrackedSource(context);
+  assert.equal(result.tracking.status, 'focus_changed');
+  assert.equal(result.tracking.focus.status, 'requirement_changed_or_missing');
+  assert.equal(result.tracking.focus.currentRequirementQuote, null);
+  assert.ok(!JSON.stringify(result).includes(requirementPassage));
+  f.setSource(makeSource('The decision was removed.', 2));
+  result = await f.service.loadTrackedSource(context);
+  assert.equal(result.tracking.focus.status, 'source_changed_or_missing');
+  assert.equal(result.tracking.focus.reviewedSourceQuote, sourcePassage);
+  assert.equal(result.tracking.focus.currentSourceQuote, null);
+});
+
+test('duplicated linked source or Jira text is ambiguous even when the other passage is missing', async () => {
+  for (const duplicateSource of [true, false]) {
+    const f = passageFixture(); await capturePassage(f);
+    f.setSource(makeSource(duplicateSource ? `${sourcePassage}\n${sourcePassage}` : 'No original source passage.', 2));
+    f.issue.description = description(duplicateSource ? 'No original requirement passage.' : `${requirementPassage}\n${requirementPassage}`);
+    const result = await f.service.loadTrackedSource(context);
+    assert.equal(result.tracking.status, 'focus_ambiguous');
+    assert.equal(result.tracking.focus.status, 'ambiguous');
+  }
+});
+
+test('focused history denied or unverifiable returns no historical quotes, while consent propagates', async () => {
+  for (const failure of ['denied', 'identity', 'version', 'hash', 'textHash', 'body', 'coverage']) {
+    const f = passageFixture(); await capturePassage(f);
+    f.setSource(makeSource(`${sourcePassage}\nNew context.`, 2));
+    if (failure === 'denied') f.gateway.readSourceVersion = async () => { f.historyCalls.push({}); throw new SpikeError('ACCESS_DENIED', 'History denied'); };
+    else {
+      const old = f.history.get('12345:1');
+      if (failure === 'identity') old.id = '99999';
+      if (failure === 'version') old.version = 9;
+      if (failure === 'hash') old.hash = digest('invalid');
+      if (failure === 'textHash') old.textHash = digest('invalid');
+      if (failure === 'body') old.text = 'Wrong body despite claimed metadata.';
+      if (failure === 'coverage') old.hasUnrepresentedContent = true;
+    }
+    const result = await f.service.loadTrackedSource(context);
+    assert.equal(result.tracking.status, 'focus_unavailable');
+    assert.equal(result.tracking.focus.reviewedSourceQuote, null);
+    assert.equal(result.tracking.focus.currentSourceQuote, null);
+    assert.equal(result.tracking.diff.status, 'unavailable');
+    assert.equal(f.historyCalls.length, 1);
+  }
+  const f = passageFixture(); await capturePassage(f); f.setSource(makeSource('Changed.', 2));
+  const consent = new Error('NEEDS_AUTHENTICATION');
+  f.gateway.readSourceVersion = async () => { throw consent; };
+  await assert.rejects(f.service.loadTrackedSource(context), error => error === consent);
+});
+
+test('unsupported current Jira or source content makes the focus unavailable without cached quotations', async () => {
+  for (const mutate of [
+    f => { f.issue.description = { text: 'Unsupported Jira body' }; },
+    f => { f.issue.description = description('x'.repeat(16001)); },
+    f => { f.sources.get('12345').hasUnrepresentedContent = true; }
+  ]) {
+    const f = passageFixture(); await capturePassage(f); mutate(f);
+    const result = await f.service.loadTrackedSource(context);
+    assert.equal(result.tracking.status, 'focus_unavailable');
+    assert.equal(result.tracking.focus.reviewedSourceQuote, null);
+    assert.equal(result.tracking.focus.currentRequirementQuote, null);
+  }
+});
+
+test('inspecting a different source never recovers focus from the previous page', async () => {
+  const f = passageFixture(); await capturePassage(f);
+  f.setSource(makeSource(sourcePassage, 1, '99999'));
+  const result = await f.service.inspectDecisionSource(context, { pageInput: '99999' });
+  assert.equal(result.tracking.status, 'different_source');
+  assert.equal(result.tracking.focus, null);
+  assert.equal(f.historyCalls.length, 0);
+});
+
+test('same focused reviews coalesce, but concurrent different focus updates never overwrite each other', async () => {
+  const f = passageFixture();
+  const first = await preparePassage(f);
+  const identical = await preparePassage(f, otherReviewer);
+  await confirm(f, first);
+  assert.equal((await confirm(f, identical, otherReviewer)).alreadyReviewed, true);
+  assert.equal(f.writes(), 1);
+  const a = await preparePassage(f, context, { sourceQuote: 'Decision introduction.' });
+  const b = await preparePassage(f, otherReviewer, { sourceQuote: 'Other source detail.' });
+  const original = f.baselineStore.compareAndSet;
+  let enter; let release;
+  const entered = new Promise(resolve => { enter = resolve; });
+  const blocked = new Promise(resolve => { release = resolve; });
+  f.baselineStore.compareAndSet = async (key, revision, value) => {
+    if (value.reviewId === a.previewId) { enter(); await blocked; }
+    return original(key, revision, value);
+  };
+  const delayed = confirm(f, a); await entered;
+  await confirm(f, b, otherReviewer); release();
+  await rejectsCode(delayed, 'BASELINE_CONFLICT');
+  assert.equal(f.baselines.get(BASELINE_KEY).reviewId, b.previewId);
+  assert.equal(f.writes(), 2);
+});
+
+test('an older page preview cannot discard a concurrently created passage link', async () => {
+  const f = passageFixture(); const page = await prepare(f); const linked = await preparePassage(f, otherReviewer);
+  await confirm(f, linked, otherReviewer);
+  await rejectsCode(confirm(f, page), 'BASELINE_CONFLICT');
+  const legacy = f.records.get(`baseline-preview:${page.previewId}`); delete legacy.mode;
+  await rejectsCode(confirm(f, page), 'FOCUS_REVIEW_REQUIRED');
+  assert.ok(f.baselines.get(BASELINE_KEY).focus);
+});
+
+test('focused preview keeps actor, expiry, freshness and exact immutable metadata gates; apply-time quotes are ignored', async () => {
+  for (const change of ['expire', 'source', 'requirement', 'summary', 'updated']) {
+    const f = passageFixture(); const preview = await preparePassage(f);
+    if (change === 'expire') f.advance(PREVIEW_MS);
+    if (change === 'source') f.setSource(makeSource(`${sourcePassage}\nChanged outside focus.`, 2));
+    if (change === 'requirement') f.issue.description = description(`${requirementPassage}\nChanged other criteria.`);
+    if (change === 'summary') f.issue.summary = 'Different summary';
+    if (change === 'updated') f.issue.updated = '2026-11-03T18:00:00Z';
+    await rejectsCode(confirm(f, preview), change === 'expire' ? 'EXPIRED_PREVIEW' : 'STALE_PREVIEW');
+    assert.equal(f.writes(), 0);
+  }
+  const f = passageFixture(); const preview = await preparePassage(f);
+  await rejectsCode(confirm(f, preview, otherReviewer), 'INVALID_PREVIEW');
+  await f.service.confirmBaseline(context, { previewId: preview.previewId, approved: true, mode: 'page', sourceQuote: 'Injected', focus: null });
+  assert.equal(f.baselines.get(BASELINE_KEY).focus.sourcePassageHash, digest(sourcePassage));
+  assert.equal(typeof f.gateway.postComment, 'undefined', 'baseline confirmation has no Jira write dependency');
+});
+
+test('focused receipts use fresh permissions and refuse source regression, while showing later current changes', async () => {
+  const f = passageFixture(); f.setSource(makeSource(f.sources.get('12345').text, 2));
+  const preview = await preparePassage(f); await confirm(f, preview);
+  f.setSource(makeSource(f.sources.get('12345').text, 1));
+  await rejectsCode(confirm(f, preview), 'SOURCE_REGRESSION');
+  f.setSource(makeSource(`${sourcePassage}\nNew context.`, 3));
+  const later = await confirm(f, preview);
+  assert.equal(later.alreadyReviewed, true);
+  assert.equal(later.source.version, 3);
+  assert.equal(later.tracking.baseline.sourceVersion, 2);
+  assert.equal(later.tracking.status, 'outside_scope');
+  assert.equal(f.writes(), 1);
+  f.gateway.readSource = async () => { throw new SpikeError('ACCESS_DENIED', 'Denied'); };
+  await rejectsCode(confirm(f, preview), 'ACCESS_DENIED');
+});
+
+test('invalid stored focus metadata fails closed and forged preview focus cannot become a baseline', async () => {
+  for (const mutate of [
+    focus => { focus.sourceLength = 1; }, focus => { focus.requirementStart = 16000; },
+    focus => { focus.requirementField = 'summary'; }, focus => { focus.sourcePassageHash = 'invalid'; },
+    focus => { focus.sourceQuote = sourcePassage; }
+  ]) {
+    const f = passageFixture(); await capturePassage(f); mutate(f.baselines.get(BASELINE_KEY).focus);
+    await rejectsCode(f.service.loadTrackedSource(context), 'INVALID_BASELINE');
+  }
+  const f = passageFixture(); const preview = await preparePassage(f);
+  f.records.get(`baseline-preview:${preview.previewId}`).focus.sourcePassageHash = digest('Forged passage');
+  await rejectsCode(confirm(f, preview), 'INVALID_PREVIEW');
+  assert.equal(f.writes(), 0);
+});
+
+test('storage object-key ordering does not change passage identity or invalidate a receipt', async () => {
+  const f = passageFixture(); const preview = await preparePassage(f);
+  const storedPreview = f.records.get(`baseline-preview:${preview.previewId}`);
+  storedPreview.focus = Object.fromEntries(Object.entries(storedPreview.focus).reverse());
+  await confirm(f, preview);
+  const baseline = f.baselines.get(BASELINE_KEY);
+  baseline.focus = Object.fromEntries(Object.entries(baseline.focus).sort(([a], [b]) => a.localeCompare(b)));
+  assert.equal((await confirm(f, preview)).alreadyReviewed, true);
+  const repeat = await preparePassage(f);
+  assert.equal((await confirm(f, repeat)).alreadyReviewed, true);
+  assert.equal(f.writes(), 1);
+});

@@ -70,6 +70,27 @@ function adfText(document) {
   return walk(document).trim();
 }
 
+const representedTypes = new Set(['doc', 'text', 'hardBreak', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'table', 'tableRow', 'tableCell', 'tableHeader', 'blockquote', 'codeBlock', 'rule', 'panel', 'expand', 'nestedExpand']);
+const hasUnrepresentedContent = node => !representedTypes.has(node.type) || Boolean(node.content?.some(hasUnrepresentedContent));
+
+function issueEvidenceText(issue) {
+  if (issue.description === null || issue.description === undefined) return '';
+  const document = issue.description;
+  if (document?.type !== 'doc' || document.version !== 1 || !Array.isArray(document.content)) {
+    fail('UNSUPPORTED_ISSUE', 'Passage links require a supported Jira description. Add the requirement to the issue description and recheck.');
+  }
+  let text;
+  try { text = adfText(document); }
+  catch (error) {
+    if (!(error instanceof SpikeError) || error.code !== 'UNSUPPORTED_PAGE') throw error;
+    fail('UNSUPPORTED_ISSUE', 'The Jira description is too complex to inspect completely. Use a smaller text description.');
+  }
+  if (text.length > 16000 || hasUnrepresentedContent(document)) {
+    fail('UNSUPPORTED_ISSUE', 'Passage links require a complete text description within 16,000 characters. Review rich content directly in Jira.');
+  }
+  return text;
+}
+
 function sourceFromPage(page, origin, { expectedVersion } = {}) {
   const historical = expectedVersion !== undefined;
   if ((historical && (!Number.isInteger(expectedVersion) || expectedVersion < 1 || page.version?.number !== expectedVersion)) ||
@@ -89,8 +110,6 @@ function sourceFromPage(page, origin, { expectedVersion } = {}) {
   }
   const text = adfText(document);
   if (text.length > 16000) fail('UNSUPPORTED_PAGE', 'This page exceeds the 16,000-character review limit. Use a smaller decision page so its complete text can be reviewed.');
-  const representedTypes = new Set(['doc', 'text', 'hardBreak', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'table', 'tableRow', 'tableCell', 'tableHeader', 'blockquote', 'codeBlock', 'rule', 'panel', 'expand', 'nestedExpand']);
-  const hasUnrepresentedContent = node => !representedTypes.has(node.type) || Boolean(node.content?.some(hasUnrepresentedContent));
   return {
     id: String(page.id), title: page.title, version: page.version?.number,
     url: `${origin}/wiki/pages/viewpage.action?pageId=${encodeURIComponent(page.id)}`,
@@ -110,11 +129,20 @@ async function inspectSnapshot(gateway, context, pageInput) {
   return { actor, issue, source, origin };
 }
 
-const publicView = ({ issue, source, origin }) => ({
-  issue: { key: issue.key, summary: issue.summary, updated: issue.updated },
-  source: { id: source.id, title: source.title, version: source.version, url: source.url, text: source.text, hasUnrepresentedContent: Boolean(source.hasUnrepresentedContent) },
-  runtime: { siteUrl: origin, access: 'Current signed-in user', writeMode: 'Reviewed Jira comment' }
-});
+function publicView({ issue, source, origin }) {
+  let text = '';
+  let textComplete = true;
+  try { text = issueEvidenceText(issue); }
+  catch (error) {
+    if (!(error instanceof SpikeError) || error.code !== 'UNSUPPORTED_ISSUE') throw error;
+    textComplete = false;
+  }
+  return {
+    issue: { key: issue.key, summary: issue.summary, updated: issue.updated, text, textComplete },
+    source: { id: source.id, title: source.title, version: source.version, url: source.url, text: source.text, hasUnrepresentedContent: Boolean(source.hasUnrepresentedContent) },
+    runtime: { siteUrl: origin, access: 'Current signed-in user', writeMode: 'Reviewed Jira comment' }
+  };
+}
 
 function makeComment(previewId, issueKey, source) {
   // Keep source quotations and restricted titles out of the broader Jira comment audience.
@@ -210,4 +238,4 @@ function createSpike({ gateway, store, now = Date.now, newId = randomUUID }) {
   return { inspectSource, prepareUpdate, applyUpdate };
 }
 
-module.exports = { createSpike, SpikeError, parsePageInput, siteOrigin, adfText, sourceFromPage, digest, PREVIEW_MS, UUID, identity, inspectSnapshot, publicView };
+module.exports = { createSpike, SpikeError, parsePageInput, siteOrigin, adfText, sourceFromPage, issueEvidenceText, digest, PREVIEW_MS, UUID, identity, inspectSnapshot, publicView };

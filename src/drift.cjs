@@ -1,7 +1,8 @@
 const { randomUUID } = require('node:crypto');
 const {
-  SpikeError, identity, inspectSnapshot, publicView, digest, PREVIEW_MS, UUID
+  SpikeError, identity, inspectSnapshot, publicView, digest, PREVIEW_MS, UUID, issueEvidenceText
 } = require('./spike.cjs');
+const { validateFocus, sameFocus, prepareFocus, trackFocus, unavailableFocus, MAX_TEXT_LENGTH } = require('./passage.cjs');
 
 const MAX_DIFF_LINES = 200;
 const MAX_DIFF_CHANGES = 24;
@@ -21,6 +22,7 @@ function validateBaseline(baseline) {
       !Number.isFinite(new Date(baseline.reviewedAt).getTime()) || !UUID.test(baseline.reviewId)) {
     fail('INVALID_BASELINE', 'The saved baseline could not be verified. No review was changed.');
   }
+  if (baseline.focus !== undefined) validateFocus(baseline.focus);
   return baseline;
 }
 
@@ -54,17 +56,17 @@ function lineDiff(before, after) {
   };
 }
 
-function sameReview(baseline, snapshot) {
+function sameReview(baseline, snapshot, focus) {
   return baseline && baseline.sourceId === snapshot.source.id && baseline.sourceVersion === snapshot.source.version &&
     baseline.sourceHash === snapshot.source.hash && baseline.textHash === snapshot.source.textHash &&
-    baseline.issueHash === issueContentHash(snapshot.issue);
+    baseline.issueHash === issueContentHash(snapshot.issue) && sameFocus(baseline.focus, focus);
 }
 
 function createDrift({ gateway, store, baselineStore, now = Date.now, newId = randomUUID }) {
   const getBaseline = async actor => validateBaseline(await baselineStore.get(baselineKey(actor)));
 
   async function trackingFor(snapshot, baseline) {
-    if (!baseline) return { status: 'unreviewed', baseline: null, sourceChanged: false, issueChanged: false, diff: noDiff() };
+    if (!baseline) return { status: 'unreviewed', baseline: null, sourceChanged: false, issueChanged: false, diff: noDiff(), focus: null };
     const publicBaseline = {
       revision: baseline.revision, sourceId: baseline.sourceId,
       sourceVersion: baseline.sourceVersion, reviewedAt: baseline.reviewedAt
@@ -73,24 +75,51 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
     const sourceChanged = baseline.sourceHash !== snapshot.source.hash;
     const issueChanged = baseline.issueHash !== issueContentHash(snapshot.issue);
     const versionChanged = baseline.sourceVersion !== snapshot.source.version;
-    const status = differentSource ? 'different_source' : sourceChanged && issueChanged ? 'both_changed'
+    let status = differentSource ? 'different_source' : sourceChanged && issueChanged ? 'both_changed'
       : sourceChanged ? 'source_changed' : issueChanged ? 'issue_changed' : versionChanged ? 'version_changed' : 'unchanged';
-    let diff = noDiff();
-    if (sourceChanged && !differentSource) {
+    let previousResult;
+    async function previousSource() {
+      if (previousResult) return previousResult;
+      const validText = source => typeof source.text === 'string' && source.text.length <= MAX_TEXT_LENGTH &&
+        !source.hasUnrepresentedContent && digest(source.text) === baseline.textHash;
+      if (snapshot.source.hasUnrepresentedContent) return (previousResult = { source: null, limited: true });
+      // Matching raw bodies need no historical call, even if only the page version changed.
+      if (!sourceChanged) {
+        const valid = snapshot.source.textHash === baseline.textHash && validText(snapshot.source);
+        return (previousResult = { source: valid ? snapshot.source : null, limited: !valid });
+      }
       try {
         const previous = await gateway.readSourceVersion(baseline.sourceId, snapshot.origin, baseline.sourceVersion);
         if (previous.id !== baseline.sourceId || previous.version !== baseline.sourceVersion ||
             previous.hash !== baseline.sourceHash || previous.textHash !== baseline.textHash ||
-            previous.hasUnrepresentedContent || snapshot.source.hasUnrepresentedContent) {
-          diff = noDiff('unavailable', true);
-        } else diff = lineDiff(previous.text, snapshot.source.text);
+            !validText(previous)) return (previousResult = { source: null, limited: true });
+        return (previousResult = { source: previous, limited: false });
       } catch (error) {
         if (!(error instanceof SpikeError) || !['ACCESS_DENIED', 'UNPUBLISHED_PAGE', 'UNSUPPORTED_PAGE', 'INVALID_SOURCE'].includes(error.code)) throw error;
         // Consent and unknown SDK errors propagate; denied history never becomes cached evidence.
-        diff = noDiff('unavailable');
+        return (previousResult = { source: null, limited: false });
       }
     }
-    return { status, baseline: publicBaseline, sourceChanged, issueChanged, diff };
+    let diff = noDiff();
+    if (sourceChanged && !differentSource) {
+      const previous = await previousSource();
+      diff = previous.source ? lineDiff(previous.source.text, snapshot.source.text) : noDiff('unavailable', previous.limited);
+    }
+    let focus = null;
+    if (baseline.focus && !differentSource) {
+      let issueText;
+      try { issueText = issueEvidenceText(snapshot.issue); }
+      catch (error) {
+        if (!(error instanceof SpikeError) || error.code !== 'UNSUPPORTED_ISSUE') throw error;
+      }
+      const previous = await previousSource();
+      focus = typeof issueText === 'string'
+        ? trackFocus(baseline.focus, previous.source, snapshot.source, issueText) : unavailableFocus();
+      status = focus.status === 'unavailable' ? 'focus_unavailable' : focus.status === 'ambiguous' ? 'focus_ambiguous'
+        : focus.status !== 'unchanged' ? 'focus_changed'
+          : sourceChanged || issueChanged || versionChanged ? 'outside_scope' : 'unchanged';
+    }
+    return { status, baseline: publicBaseline, sourceChanged, issueChanged, diff, focus };
   }
 
   async function view(snapshot, baseline) {
@@ -120,6 +149,14 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
   async function prepareBaseline(context, payload = {}) {
     const snapshot = await inspectSnapshot(gateway, context, payload.pageInput);
     const baseline = await getBaseline(snapshot.actor);
+    if (payload.mode === undefined && baseline?.focus) {
+      fail('FOCUS_REVIEW_REQUIRED', 'This baseline links specific passages. Choose passage or whole-page tracking explicitly before reviewing.');
+    }
+    const mode = payload.mode === undefined ? 'page' : payload.mode;
+    if (!['page', 'passage'].includes(mode)) fail('INVALID_MODE', 'Choose whole-page tracking or a specific passage link.');
+    const prepared = mode === 'passage'
+      ? prepareFocus(snapshot.source, issueEvidenceText(snapshot.issue), payload.sourceQuote, payload.requirementQuote)
+      : { focus: undefined, reviewScope: { mode: 'page', sourceQuote: null, requirementQuote: null } };
     const previewId = newId();
     const expiresAt = now() + PREVIEW_MS;
     const result = await view(snapshot, baseline);
@@ -128,9 +165,10 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
       expectedRevision: baseline?.revision ?? 0,
       sourceId: snapshot.source.id, sourceVersion: snapshot.source.version,
       sourceHash: snapshot.source.hash, textHash: snapshot.source.textHash,
-      issueHash: issueContentHash(snapshot.issue), issueReviewHash: issueReviewHash(snapshot.issue)
+      issueHash: issueContentHash(snapshot.issue), issueReviewHash: issueReviewHash(snapshot.issue), mode,
+      ...(prepared.focus ? { focus: prepared.focus } : {})
     });
-    return { ...result, previewId, expiresAt: new Date(expiresAt).toISOString() };
+    return { ...result, previewId, expiresAt: new Date(expiresAt).toISOString(), reviewScope: prepared.reviewScope };
   }
 
   async function confirmBaseline(context, payload = {}) {
@@ -146,18 +184,34 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
     // Fresh current-user product reads precede both writes and idempotent receipt returns.
     const snapshot = await inspectSnapshot(gateway, context, preview.sourceId);
     const baseline = await getBaseline(actor);
-    if (baseline?.reviewId === preview.previewId) return { ...await view(snapshot, baseline), alreadyReviewed: true };
+    if (preview.mode !== undefined && !['page', 'passage'].includes(preview.mode)) fail('INVALID_PREVIEW', 'Prepare a fresh review with an explicit tracking scope.');
+    if (preview.mode === 'passage') validateFocus(preview.focus, 'INVALID_PREVIEW');
+    else if (preview.focus !== undefined) fail('INVALID_PREVIEW', 'The review scope could not be verified. Prepare a fresh review.');
+    if (baseline?.sourceId === snapshot.source.id && baseline.sourceVersion > snapshot.source.version) {
+      fail('SOURCE_REGRESSION', 'A newer source version has already been reviewed. Refresh the source.');
+    }
+    if (baseline?.reviewId === preview.previewId) {
+      if (baseline.sourceId !== preview.sourceId || baseline.sourceVersion !== preview.sourceVersion ||
+          !sameFocus(baseline.focus, preview.focus)) fail('INVALID_PREVIEW', 'The saved receipt does not match this review.');
+      return { ...await view(snapshot, baseline), alreadyReviewed: true };
+    }
     if (now() >= preview.expiresAt) fail('EXPIRED_PREVIEW', 'This review expired. Prepare and approve a new baseline.');
     if (snapshot.source.version !== preview.sourceVersion || snapshot.source.hash !== preview.sourceHash ||
         snapshot.source.textHash !== preview.textHash || issueReviewHash(snapshot.issue) !== preview.issueReviewHash) {
       fail('STALE_PREVIEW', 'The source or Jira work item changed after preview. Prepare a new baseline review.');
     }
-    if (sameReview(baseline, snapshot)) return { ...await view(snapshot, baseline), alreadyReviewed: true };
+    if (preview.mode === undefined && baseline?.focus) fail('FOCUS_REVIEW_REQUIRED', 'The tracking scope changed. Prepare a fresh review and choose its scope explicitly.');
+    if (preview.focus) {
+      // Rebuild from the fresh exact bodies, never from apply-time client quotes.
+      const issueText = issueEvidenceText(snapshot.issue);
+      const sourceQuote = snapshot.source.text.slice(preview.focus.sourceStart, preview.focus.sourceStart + preview.focus.sourceLength);
+      const requirementQuote = issueText.slice(preview.focus.requirementStart, preview.focus.requirementStart + preview.focus.requirementLength);
+      const verified = prepareFocus(snapshot.source, issueText, sourceQuote, requirementQuote).focus;
+      if (!sameFocus(verified, preview.focus)) fail('INVALID_PREVIEW', 'The passage review could not be verified. Prepare a fresh review.');
+    }
+    if (sameReview(baseline, snapshot, preview.focus)) return { ...await view(snapshot, baseline), alreadyReviewed: true };
     if ((baseline?.revision ?? 0) !== preview.expectedRevision) {
       fail('BASELINE_CONFLICT', 'Another reviewer changed the baseline. Refresh and review the latest state.');
-    }
-    if (baseline?.sourceId === snapshot.source.id && baseline.sourceVersion > snapshot.source.version) {
-      fail('SOURCE_REGRESSION', 'A newer source version has already been reviewed. Refresh the source.');
     }
     if (preview.expectedRevision >= MAX_REVISION) fail('BASELINE_LIMIT', 'This baseline cannot accept another revision.');
     const next = {
@@ -165,7 +219,8 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
       sourceId: snapshot.source.id, sourceVersion: snapshot.source.version,
       sourceHash: snapshot.source.hash, textHash: snapshot.source.textHash,
       issueHash: issueContentHash(snapshot.issue), reviewedAt: new Date(now()).toISOString(),
-      reviewerAccountId: actor.accountId, reviewId: preview.previewId
+      reviewerAccountId: actor.accountId, reviewId: preview.previewId,
+      ...(preview.focus ? { focus: preview.focus } : {})
     };
     let saved;
     try {
@@ -177,7 +232,7 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
     }
     if (!saved) {
       const latest = await getBaseline(actor);
-      if (latest?.reviewId === preview.previewId || sameReview(latest, snapshot)) {
+      if (latest?.reviewId === preview.previewId || sameReview(latest, snapshot, preview.focus)) {
         return { ...await view(snapshot, latest), alreadyReviewed: true };
       }
       fail('BASELINE_CONFLICT', 'Another reviewer changed the baseline. Refresh and review the latest state.');

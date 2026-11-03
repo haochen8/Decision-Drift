@@ -1,8 +1,12 @@
 # Decision Drift
 
-A Forge app for software teams that keeps the Confluence decision behind a Jira issue in view. It remembers a reviewed source version, restores that source on the next visit, and shows when the page or work item changes.
+A Forge app for software teams that keeps the Confluence decision behind a Jira issue in view. It remembers a reviewed source version, restores that source on the next visit, and checks exact decision and requirement passages selected by the reviewer.
 
-The current feature adds a shared reviewed source per Jira issue. Inspect a page, review its complete supported text, and explicitly save that version as the comparison point. Subsequent checks show reviewed versus published versions, work-item changes, and bounded text differences fetched from Confluence history with the current user's permissions. Saving a review does not post a Jira comment.
+The implemented source-review flow stores one shared reviewed source per Jira issue. Inspect a page, review its complete supported text, and explicitly save that version as the comparison point. Subsequent checks show reviewed versus published versions, work-item changes, and bounded text differences fetched from Confluence history with the current user's permissions. Saving a review does not post a Jira comment.
+
+The new passage-link feature is implemented locally and awaits cloud deployment and live verification. A reviewer can link one exact, unique Confluence passage to one exact, unique passage in the **Jira description**. The server verifies both selections against complete supported text. Durable link records add only a schema version, the description-field identifier, offsets, lengths and hashes; they retain no passage text. Later checks can recover a uniquely matching passage after it moves, flag edited or missing text, reject duplicates, and show unavailable evidence when current text or verified history cannot support the check.
+
+When both linked passages still match once but surrounding content changed, the app displays **Context changed** (`outside_scope`). The reviewer must inspect that context before deciding whether the link still applies. Matching passages establish text continuity, not semantic agreement or irrelevance of surrounding changes. Every preview needs explicit approval; changing either passage or the tracking scope invalidates that preview and its approval. Whole-page tracking remains available through a separately reviewed scope change.
 
 Review previews expire after ten minutes. Confirmation rechecks access and source/work-item freshness; conditional Forge Custom Entity transactions prevent an older pending review from replacing a newer review. Durable records contain metadata and fingerprints, never source titles or body text. Historical excerpts are fetched afresh; inaccessible or incomplete history remains visibly unresolved. Text changes establish freshness, not semantic requirements conflict.
 
@@ -27,7 +31,7 @@ npm run lint
 
 These commands check local code. They do not prove that the app is registered, deployed, installed or authorized in Atlassian.
 
-`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. The suite currently contains 56 checks, including backend scenarios, bounded document parsing, and 11 journeys through the real bundled React/UI Kit event handlers.
+`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. Tests cover backend scenarios, bounded document parsing, passage matching and journeys through the real bundled React/UI Kit event handlers. Product and storage boundaries in local tests are simulated.
 
 ## Connect the app
 
@@ -47,7 +51,9 @@ The [small synthetic Jira/Confluence fixture](docs/atlassian-setup.md#5-create-t
 
 ## Verification status
 
-On November 3, 2026, all 56 local checks, compilation and official Forge lint passed for persistent reviewed-source tracking. Independent implementation reviews caught and fixed the auto-load form API mismatch, an idempotent receipt that could name the wrong reviewed version, and a misleading historical-access warning for a different source. Development version **2.3.0** deployed successfully at `2026-11-03T17:17:59.773Z`; the `decision-baseline` entity's default index is **ACTIVE** and the existing Jira/Confluence installation is up to date.
+**Passage linking is implemented locally; deployment and live verification are pending.** The planned live check will use a fresh synthetic **DD-2** fixture, preserving the live-verified DD-1/page 557057 version 2 baseline. It must verify save/reopen, moved text, context-only changes, a changed linked passage, duplicate and unavailable evidence, and approval invalidation before those results can be claimed.
+
+On November 3, 2026, the preceding persistent source-review feature passed its local suite, compilation and official Forge lint. Independent implementation reviews caught and fixed the auto-load form API mismatch, an idempotent receipt that could name the wrong reviewed version, and a misleading historical-access warning for a different source. Development version **2.3.0** deployed successfully at `2026-11-03T17:17:59.773Z`; the `decision-baseline` entity's default index is **ACTIVE** and the existing Jira/Confluence installation is up to date. These deployment and live results establish the source-review flow, not the new passage-link implementation.
 
 The **live source-review flow passed in Chrome Incognito**: explicitly save page 557057/version 1, reload and automatically restore it, publish a synthetic admins-only-to-members-only constraint change, detect v1 → v2 with the exact historical text difference, explicitly save v2, and reload with v2 reviewed and unchanged. An independent Jira API check confirmed its original description was unchanged and no additional comment appeared; only `10003` remained. The fixture is now published and reviewed at **version 2**. [Sanitized live evidence](docs/evidence/2026-11-03-source-review.json) · [Live verification steps](docs/atlassian-setup.md#persistent-source-review-verification).
 
@@ -62,11 +68,11 @@ Production judge installation and live stale/expired/concurrent/denied-user/repl
 Codegeist gives equal weight to platform implementation, coherent design, credible audience impact, originality and presentation. The feature sequence therefore prioritizes a working review story that a judge can reproduce in a fresh site. [Official judging criteria](https://codegeist2026.devpost.com/#judging-criteria).
 
 1. **Persistent source review — implemented, reviewed, deployed and live-verified.** The v1 → v2 review/reopen/change/diff/rereview sequence passed without another Jira comment. Evidence records the actual versions and the remaining untested live failure cases.
-2. **Relevant decision passage — next implementation.** Let a reviewer select an exact decision passage and map it to a Jira requirement. Verify the selection on the server and distinguish a change to that passage from an unrelated page edit. Ambiguous, deleted or inaccessible passages must request review. The demo should contrast an unrelated edit with an admin-only-to-member-access decision change.
-3. **Release review queue.** Present a small, bounded set of linked issues with changed/unresolved/reviewed states and clear next actions. The queue must respect each viewer's current permissions. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
+2. **Exact decision-to-description passage link — implemented locally; verification pending.** Link unique source and Jira description passages with server validation and metadata-only storage. Matching text with changed context still needs manual review; missing, duplicate or unavailable evidence cannot establish continuity. Complete implementation review, checks, deployment and the fresh DD-2 live sequence before claiming a verified release.
+3. **Release review queue — next planned feature.** Present a small, bounded set of linked issues with changed/unresolved/reviewed states and clear next actions. Re-read each issue and source under the viewer's current permissions, and make the bounded scope visible. This feature will use permission-checked text comparisons and manual review; it needs no AI service. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
 4. **Judge-ready delivery.** Verify installation on a separate site, provide repeatable synthetic setup data, complete the remaining live failure tests, and record an end-to-end demo designed to fit three minutes. Production distribution and submission are later milestones.
 
-After every implementation, review correctness and the product flow, fix findings, run relevant checks, and commit and push the completed change. No external AI service, paid model call or billing change is needed for the current feature or the next passage-comparison slice.
+After every implementation, review correctness and the product flow, fix findings, run relevant checks, and commit and push the completed change. No external AI service, paid model call or billing change is needed for passage linking or the planned release review queue.
 
 The [live verification runbook](docs/atlassian-setup.md#live-verification-runbook) covers source reads, preview, confirmed writes, permission failures and duplicate submissions. Use synthetic issues and pages in the development site.
 

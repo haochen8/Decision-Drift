@@ -43,6 +43,8 @@ app:
             type: string
           reviewId:
             type: string
+          focus:
+            type: any
   runtime:
     name: nodejs22.x
   compatibility:

@@ -158,12 +158,27 @@ async function renderApp(t, handlers) {
   }
   await until(() => reconcileCount > 0, 'initial Forge reconciliation');
   await settle();
-  return { calls, nodes, text, button, until, settle, event, click, input };
+  function checkbox(name) {
+    const node = nodes('Checkbox').find(item => item.props.label === name);
+    assert.ok(node, `Checkbox not rendered: ${name}`);
+    return node;
+  }
+  function approvals() { return nodes('Checkbox').filter(node => node.props.label?.startsWith('I reviewed ')); }
+  function approval() {
+    assert.equal(approvals().length, 1, 'Exactly one explicit review approval must be rendered');
+    return approvals()[0];
+  }
+  async function passageInput(id, value) {
+    const node = nodes('TextArea').find(item => item.props.id?.endsWith(`-${id}`));
+    assert.ok(node, `Passage text area not rendered: ${id}`);
+    await event(node, 'onChange', { target: { type: 'textarea', value } });
+  }
+  return { calls, nodes, text, button, until, settle, event, click, input, checkbox, approvals, approval, passageInput };
 }
 
 function snapshot(status = 'unreviewed', overrides = {}) {
   return {
-    issue: { id: '10001', key: 'DD-1', summary: 'Review export policy', updated: '2026-10-29T15:00:00Z' },
+    issue: { id: '10001', key: 'DD-1', summary: 'Review export policy', updated: '2026-10-29T15:00:00Z', text: 'Only project admins can export records.\nKeep audit logs.', textComplete: true },
     source: {
       id: '12345', title: 'Restricted decision title', version: 3,
       url: 'https://test.atlassian.net/wiki/pages/viewpage.action?pageId=12345',
@@ -188,7 +203,39 @@ function preview(status = 'unreviewed') {
   return {
     ...snapshot(status), previewId: '11111111-2222-4333-8444-555555555555',
     expiresAt: new Date(Date.now() + 600000).toISOString(),
+    reviewScope: { mode: 'page', sourceQuote: null, requirementQuote: null },
   };
+}
+
+const MODE_LABEL = 'Link specific decision and requirement passages';
+const SOURCE_QUOTE = 'Only admins may export the source records.';
+const REQUIREMENT_QUOTE = 'Only project admins can export records.';
+const SECOND_SOURCE_QUOTE = 'Exports include audit trails.';
+const SECOND_REQUIREMENT_QUOTE = 'Keep audit logs.';
+
+function focusedSnapshot(status = 'unchanged', focusOverrides = {}) {
+  const result = snapshot(status);
+  result.source.text = `${SOURCE_QUOTE}\n${SECOND_SOURCE_QUOTE}`;
+  result.tracking.focus = {
+    status: 'unchanged', sourceStatus: 'unchanged', requirementStatus: 'unchanged',
+    reviewedSourceQuote: SOURCE_QUOTE, currentSourceQuote: SOURCE_QUOTE,
+    currentRequirementQuote: REQUIREMENT_QUOTE,
+    ...focusOverrides,
+  };
+  return result;
+}
+
+function passagePreview(sourceQuote = SOURCE_QUOTE, requirementQuote = REQUIREMENT_QUOTE, current = snapshot('unchanged')) {
+  return {
+    ...preview('unchanged'), ...current,
+    reviewScope: { mode: 'passage', sourceQuote, requirementQuote },
+  };
+}
+
+async function choosePassages(app, source = SOURCE_QUOTE, requirement = REQUIREMENT_QUOTE) {
+  await app.event(app.checkbox(MODE_LABEL), 'onChange', { target: { checked: true } });
+  await app.passageInput('sourceQuote', source);
+  await app.passageInput('requirementQuote', requirement);
 }
 
 for (const status of ['source_changed', 'unchanged']) {
@@ -228,7 +275,7 @@ test('a user checks a source, reviews the exact baseline, and explicitly approve
 
   await app.click('Review current version');
   assert.ok(app.text().includes(prepared.source.text), 'Preview must display the source being approved');
-  const checkbox = app.nodes('Checkbox')[0];
+  const checkbox = app.approval();
   assert.equal(checkbox.props.label, 'I reviewed page 12345 at version 3 for DD-1.');
   assert.equal(checkbox.props.isChecked, false);
   assert.equal(app.button('Save reviewed version').props.isDisabled, true);
@@ -244,7 +291,7 @@ test('a user checks a source, reviews the exact baseline, and explicitly approve
   });
   assert.ok(app.text().includes('Source unchanged since review'));
   assert.ok(app.nodes('SectionMessage').some(node => node.props.title === 'Reviewed version saved'));
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
   assert.equal(app.button('Current version reviewed').props.isDisabled, true);
   assert.ok(!app.calls.some(call => call.name === 'applyUpdate'), 'Saving a baseline must not post a Jira note');
 });
@@ -264,8 +311,8 @@ test('an already-saved review receipt identifies the saved baseline when the pub
   });
   await app.until(() => app.text().includes('Give this work a reviewed source'), 'initial source');
   await app.click('Review current version');
-  assert.equal(app.nodes('Checkbox')[0].props.label, 'I reviewed page 12345 at version 1 for DD-1.');
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  assert.equal(app.approval().props.label, 'I reviewed page 12345 at version 1 for DD-1.');
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   await app.click('Save reviewed version');
 
   const notice = app.nodes('SectionMessage').find(node => node.props.title === 'Review already saved');
@@ -275,7 +322,7 @@ test('an already-saved review receipt identifies the saved baseline when the pub
   assert.ok(!renderedText(notice).includes('version 2'), 'Current source version must not be presented as the saved baseline');
   assert.ok(app.text().includes('Source changed since review'), 'Fresh source state must remain visible beside the earlier receipt');
   assert.equal(app.button('Review current version').props.isDisabled, false);
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
 });
 
 test('a save response without a confirmed baseline cannot display a successful review receipt', async t => {
@@ -286,11 +333,11 @@ test('a save response without a confirmed baseline cannot display a successful r
   });
   await app.until(() => app.text().includes('Source changed since review'), 'tracked source');
   await app.click('Review current version');
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   await app.click('Save reviewed version');
   assert.ok(app.text().includes('The saved review was not confirmed.'));
   assert.ok(!app.nodes('SectionMessage').some(node => ['Reviewed version saved', 'Review already saved'].includes(node.props.title)));
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
 });
 
 test('changing the page invalidates an approved preview and the next review needs fresh approval', async t => {
@@ -306,17 +353,17 @@ test('changing the page invalidates an approved preview and the next review need
   });
   await app.until(() => app.text().includes('Source changed since review'), 'tracked source');
   await app.click('Review current version');
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   assert.equal(app.button('Save reviewed version').props.isDisabled, false);
 
   await app.input('67890');
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
   assert.ok(!app.text().includes('Restricted decision title'));
   assert.ok(!app.text().includes('Only admins may export the source records.'));
   await app.click('Check source');
   await app.click('Review current version');
   assert.ok(app.text().includes('Different decision evidence.'));
-  assert.equal(app.nodes('Checkbox')[0].props.isChecked, false);
+  assert.equal(app.approval().props.isChecked, false);
   assert.equal(app.button('Save reviewed version').props.isDisabled, true);
   await app.event(app.button('Save reviewed version'), 'onClick');
   assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
@@ -346,7 +393,7 @@ test('a failed permission recheck immediately removes previously visible restric
   assert.ok(!app.text().includes('Restricted decision title'));
   assert.ok(!app.text().includes('Only admins may export the source records.'));
   assert.equal(app.nodes('CodeBlock').length, 0);
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
 });
 
 test('permission denial while saving clears the preview instead of retaining restricted source content', async t => {
@@ -358,14 +405,14 @@ test('permission denial while saving clears the preview instead of retaining res
   await app.until(() => app.text().includes('Source changed since review'), 'tracked source');
   await app.click('Review current version');
   assert.ok(app.text().includes('Restricted decision title'));
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   await app.click('Save reviewed version');
   assert.ok(app.text().includes('Source access was revoked before this review could be saved.'));
   assert.ok(!app.text().includes('Restricted decision title'));
   assert.ok(!app.text().includes('Only admins may export the source records.'));
   assert.ok(!app.text().includes('All members may export the source records.'));
   assert.equal(app.nodes('CodeBlock').length, 0);
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
   assert.ok(!app.nodes('SectionMessage').some(node => node.props.title === 'Reviewed version saved'));
 });
 
@@ -378,8 +425,8 @@ test('an expired baseline cannot be saved even if its approval callback is dispa
   await app.until(() => app.text().includes('Source changed since review'), 'tracked source');
   await app.click('Review current version');
   assert.ok(app.nodes('SectionMessage').some(node => node.props.title === 'Review expired'));
-  assert.equal(app.nodes('Checkbox')[0].props.isDisabled, true);
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  assert.equal(app.approval().props.isDisabled, true);
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   await app.event(app.button('Save reviewed version'), 'onClick');
   assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
 });
@@ -391,13 +438,13 @@ test('canceling an approved baseline leaves the next review unapproved', async t
   });
   await app.until(() => app.text().includes('Source changed since review'), 'tracked source');
   await app.click('Review current version');
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   await app.click('Cancel review');
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
   assert.ok(app.text().includes('Source changed since review'));
   assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
   await app.click('Review current version');
-  assert.equal(app.nodes('Checkbox')[0].props.isChecked, false);
+  assert.equal(app.approval().props.isChecked, false);
   assert.equal(app.button('Save reviewed version').props.isDisabled, true);
 });
 
@@ -419,11 +466,11 @@ test('the optional Jira note has its own exact preview and approval, separate fr
   assert.equal(app.nodes('CodeBlock').length, 1);
   assert.equal(app.nodes('CodeBlock')[0].props.text, prepared.commentText);
   assert.ok(!app.text().includes(prepared.source.text), 'The note preview must not display the private source excerpt');
-  assert.equal(app.nodes('Checkbox')[0].props.label, 'I reviewed this exact note and approve adding it to DD-1.');
+  assert.equal(app.approval().props.label, 'I reviewed this exact note and approve adding it to DD-1.');
   assert.equal(app.button('Add reviewed Jira note').props.isDisabled, true);
   await app.event(app.button('Add reviewed Jira note'), 'onClick');
   assert.ok(!app.calls.some(call => call.name === 'applyUpdate'));
-  await app.event(app.nodes('Checkbox')[0], 'onChange', { target: { checked: true } });
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
   await app.click('Add reviewed Jira note');
   assert.deepEqual(app.calls.at(-1), {
     name: 'applyUpdate', payload: { previewId: prepared.previewId, approved: true },
@@ -431,5 +478,214 @@ test('the optional Jira note has its own exact preview and approval, separate fr
   assert.ok(app.nodes('SectionMessage').some(node => node.props.title === 'Jira note added'));
   assert.ok(app.text().includes('Comment 50001 on DD-1 references source version 3.'));
   assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
-  assert.equal(app.nodes('Checkbox').length, 0);
+  assert.equal(app.approvals().length, 0);
 });
+
+test('an unchanged baseline can add, change, and explicitly remove a reviewed passage link', async t => {
+  const page = snapshot('unchanged');
+  page.source.text = `${SOURCE_QUOTE}\n${SECOND_SOURCE_QUOTE}`;
+  const firstFocused = focusedSnapshot();
+  const secondFocused = focusedSnapshot('unchanged', {
+    reviewedSourceQuote: SECOND_SOURCE_QUOTE, currentSourceQuote: SECOND_SOURCE_QUOTE,
+    currentRequirementQuote: SECOND_REQUIREMENT_QUOTE,
+  });
+  const preparations = [
+    passagePreview(SOURCE_QUOTE, REQUIREMENT_QUOTE, page),
+    { ...passagePreview(SECOND_SOURCE_QUOTE, SECOND_REQUIREMENT_QUOTE, firstFocused), previewId: '22222222-3333-4444-8555-666666666666' },
+    { ...preview('unchanged'), ...secondFocused, previewId: '33333333-4444-4555-8666-777777777777' },
+  ];
+  const saved = [firstFocused, secondFocused, page];
+  let prepared = 0;
+  let confirmed = 0;
+  const app = await renderApp(t, {
+    loadTrackedSource: () => ({ tracked: true, ...page }),
+    prepareBaseline: () => preparations[prepared++],
+    confirmBaseline: () => ({ ...saved[confirmed++], alreadyReviewed: false }),
+  });
+  await app.until(() => app.text().includes('Source unchanged since review'), 'unchanged baseline');
+  assert.equal(app.button('Current version reviewed').props.isDisabled, true);
+  await app.click('Read current text');
+  assert.ok(app.nodes('CodeBlock').some(node => node.props.text === page.issue.text));
+  assert.ok(app.nodes('CodeBlock').some(node => node.props.text === page.source.text));
+  await choosePassages(app);
+  assert.equal(app.button('Review linked passages').props.isDisabled, false);
+  await app.click('Review linked passages');
+  assert.deepEqual(app.calls.at(-1), {
+    name: 'prepareBaseline', payload: { pageInput: '12345', mode: 'passage', sourceQuote: SOURCE_QUOTE, requirementQuote: REQUIREMENT_QUOTE },
+  });
+  assert.equal(app.approval().props.label, 'I reviewed these passages and approve linking them for DD-1.');
+  assert.equal(app.button('Save reviewed passage link').props.isDisabled, true);
+  assert.ok(app.nodes('CodeBlock').some(node => node.props.text === SOURCE_QUOTE));
+  assert.ok(app.nodes('CodeBlock').some(node => node.props.text === REQUIREMENT_QUOTE));
+  await app.event(app.button('Save reviewed passage link'), 'onClick');
+  assert.equal(confirmed, 0, 'A passage link also requires explicit approval');
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
+  await app.click('Save reviewed passage link');
+  assert.deepEqual(app.calls.at(-1), { name: 'confirmBaseline', payload: { previewId: preparations[0].previewId, approved: true } });
+  assert.ok(app.nodes('SectionMessage').some(node => node.props.title === 'Reviewed passage link saved'));
+  assert.equal(app.checkbox(MODE_LABEL).props.isChecked, true);
+  assert.equal(app.button('Current version reviewed').props.isDisabled, true);
+
+  await app.passageInput('sourceQuote', SECOND_SOURCE_QUOTE);
+  await app.passageInput('requirementQuote', SECOND_REQUIREMENT_QUOTE);
+  await app.click('Review linked passages');
+  assert.deepEqual(app.calls.at(-1), {
+    name: 'prepareBaseline', payload: { pageInput: '12345', mode: 'passage', sourceQuote: SECOND_SOURCE_QUOTE, requirementQuote: SECOND_REQUIREMENT_QUOTE },
+  });
+  assert.equal(app.approval().props.isChecked, false);
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
+  await app.click('Save reviewed passage link');
+  assert.equal(app.button('Current version reviewed').props.isDisabled, true);
+
+  await app.event(app.checkbox(MODE_LABEL), 'onChange', { target: { checked: false } });
+  assert.equal(app.nodes('TextArea').length, 0);
+  assert.equal(app.button('Review current version').props.isDisabled, false);
+  await app.click('Review current version');
+  assert.deepEqual(app.calls.at(-1), { name: 'prepareBaseline', payload: { pageInput: '12345', mode: 'page' } });
+  assert.ok(app.nodes('SectionMessage').some(node => node.props.title === 'Replace passage link with whole-page tracking'));
+  assert.equal(app.approval().props.label, 'I reviewed page 12345 at version 3 for DD-1.');
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
+  await app.click('Save reviewed version');
+  assert.equal(app.checkbox(MODE_LABEL).props.isChecked, false);
+  assert.equal(app.nodes('TextArea').length, 0);
+  assert.equal(app.button('Current version reviewed').props.isDisabled, true);
+  assert.equal(prepared, 3);
+  assert.equal(confirmed, 3);
+  assert.ok(!app.calls.some(call => call.name === 'applyUpdate'));
+});
+
+for (const edited of ['sourceQuote', 'requirementQuote', 'mode']) {
+  test(`editing ${edited} during a passage preview invalidates its approval`, async t => {
+    const app = await renderApp(t, {
+      loadTrackedSource: () => ({ tracked: true, ...snapshot('unchanged') }),
+      prepareBaseline: () => passagePreview(),
+    });
+    await app.until(() => app.text().includes('Source unchanged since review'), 'unchanged baseline');
+    await choosePassages(app);
+    await app.click('Review linked passages');
+    await app.event(app.approval(), 'onChange', { target: { checked: true } });
+    assert.equal(app.button('Save reviewed passage link').props.isDisabled, false);
+    if (edited === 'mode') {
+      await app.event(app.checkbox(MODE_LABEL), 'onChange', { target: { checked: false } });
+      assert.equal(app.approvals().length, 0);
+      assert.equal(app.nodes('TextArea').length, 0);
+      assert.equal(app.button('Current version reviewed').props.isDisabled, true);
+    } else {
+      await app.passageInput(edited, edited === 'sourceQuote' ? SECOND_SOURCE_QUOTE : SECOND_REQUIREMENT_QUOTE);
+      assert.equal(app.approvals().length, 0);
+      assert.equal(app.button('Review linked passages').props.isDisabled, false);
+      await app.click('Review linked passages');
+      assert.equal(app.approval().props.isChecked, false);
+      assert.equal(app.button('Save reviewed passage link').props.isDisabled, true);
+    }
+    assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
+  });
+}
+
+test('loading a focused baseline replaces local drafts with fresh current quotes', async t => {
+  const app = await renderApp(t, {
+    loadTrackedSource: () => ({ tracked: true, ...focusedSnapshot() }),
+  });
+  await app.until(() => app.text().includes('The reviewed passage link'), 'focused baseline');
+  assert.equal(app.checkbox(MODE_LABEL).props.isChecked, true);
+  let fields = app.nodes('TextArea');
+  assert.equal(fields.find(node => node.props.id.endsWith('-sourceQuote')).props.value, SOURCE_QUOTE);
+  assert.equal(fields.find(node => node.props.id.endsWith('-requirementQuote')).props.value, REQUIREMENT_QUOTE);
+  await app.passageInput('sourceQuote', 'An unsaved source draft that must not survive reload.');
+  await app.passageInput('requirementQuote', 'An unsaved requirement draft that must not survive reload.');
+  await app.click('Load tracked source');
+  fields = app.nodes('TextArea');
+  assert.equal(fields.find(node => node.props.id.endsWith('-sourceQuote')).props.value, SOURCE_QUOTE);
+  assert.equal(fields.find(node => node.props.id.endsWith('-requirementQuote')).props.value, REQUIREMENT_QUOTE);
+  assert.equal(app.button('Current version reviewed').props.isDisabled, true);
+  assert.equal(app.calls.filter(call => call.name === 'loadTrackedSource').length, 2);
+});
+
+const focusCases = [
+  {
+    status: 'outside_scope', title: 'Linked text matches; other content changed',
+    focus: { status: 'unchanged', sourceStatus: 'unchanged', requirementStatus: 'unchanged' },
+    sourceField: SOURCE_QUOTE, requirementField: REQUIREMENT_QUOTE,
+    evidence: 'Exact text appears once',
+  },
+  {
+    status: 'focus_changed', title: 'Linked decision or requirement needs review',
+    focus: { status: 'source_changed_or_missing', sourceStatus: 'changed_or_missing', requirementStatus: 'unchanged', currentSourceQuote: null },
+    sourceField: '', requirementField: REQUIREMENT_QUOTE,
+    evidence: 'Edited or missing',
+  },
+  {
+    status: 'focus_ambiguous', title: 'A linked passage appears more than once',
+    focus: { status: 'ambiguous', sourceStatus: 'ambiguous', requirementStatus: 'unchanged' },
+    sourceField: SOURCE_QUOTE, requirementField: REQUIREMENT_QUOTE,
+    evidence: 'Text appears more than once',
+  },
+  {
+    status: 'focus_unavailable', title: 'The passage link could not be verified',
+    focus: { status: 'unavailable', sourceStatus: 'unavailable', requirementStatus: 'unavailable', reviewedSourceQuote: null, currentSourceQuote: null, currentRequirementQuote: null },
+    sourceField: '', requirementField: '', evidence: 'Could not verify',
+  },
+];
+
+for (const scenario of focusCases) {
+  test(`rechecking ${scenario.status} renders verified passage evidence without filling missing quotes from history`, async t => {
+    const checked = focusedSnapshot(scenario.status, scenario.focus);
+    checked.source.version = 4;
+    const app = await renderApp(t, {
+      loadTrackedSource: () => ({ tracked: true, ...focusedSnapshot() }),
+      inspectDecisionSource: () => checked,
+    });
+    await app.until(() => app.text().includes('Source unchanged since review'), 'initial focused source');
+    await app.click('Recheck source');
+    assert.ok(app.text().includes(scenario.title));
+    assert.ok(app.text().includes(scenario.evidence));
+    const fields = app.nodes('TextArea');
+    assert.equal(fields.find(node => node.props.id.endsWith('-sourceQuote')).props.value, scenario.sourceField);
+    assert.equal(fields.find(node => node.props.id.endsWith('-requirementQuote')).props.value, scenario.requirementField);
+    if (!scenario.sourceField || !scenario.requirementField) assert.equal(app.button('Review linked passages').props.isDisabled, true);
+    if (scenario.status === 'outside_scope') {
+      assert.ok(app.text().includes('matching text alone cannot establish that the decision still applies'));
+    }
+    if (scenario.status === 'focus_changed') {
+      assert.ok(app.nodes('CodeBlock').some(node => node.props.text === SOURCE_QUOTE), 'Authorized history remains review evidence without becoming the new selection');
+    }
+    if (scenario.status === 'focus_unavailable') {
+      assert.ok(!app.nodes('CodeBlock').some(node => node.props.text === SOURCE_QUOTE || node.props.text === REQUIREMENT_QUOTE));
+    }
+    assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
+  });
+}
+
+test('failed passage confirmation clears source and requirement quotes along with its approval', async t => {
+  const app = await renderApp(t, {
+    loadTrackedSource: () => ({ tracked: true, ...focusedSnapshot('outside_scope') }),
+    prepareBaseline: () => passagePreview(SOURCE_QUOTE, REQUIREMENT_QUOTE, focusedSnapshot('outside_scope')),
+    confirmBaseline: () => { throw new Error('You no longer have access to these documents.'); },
+  });
+  await app.until(() => app.text().includes('Linked text matches; other content changed'), 'focused source');
+  await app.click('Review linked passages');
+  await app.event(app.approval(), 'onChange', { target: { checked: true } });
+  await app.click('Save reviewed passage link');
+  assert.ok(app.text().includes('You no longer have access to these documents.'));
+  assert.ok(!app.text().includes(SOURCE_QUOTE));
+  assert.ok(!app.text().includes(REQUIREMENT_QUOTE));
+  assert.equal(app.nodes('TextArea').length, 0);
+  assert.equal(app.nodes('CodeBlock').length, 0);
+  assert.equal(app.approvals().length, 0);
+});
+
+for (const reviewScope of [undefined, { mode: 'unknown' }, { mode: 'passage', sourceQuote: SOURCE_QUOTE, requirementQuote: '' }]) {
+  const label = reviewScope === undefined ? 'missing' : reviewScope.mode === 'unknown' ? 'unknown' : 'incomplete passage';
+  test(`a ${label} server review scope cannot become an approvable baseline`, async t => {
+    const app = await renderApp(t, {
+      loadTrackedSource: () => ({ tracked: true, ...snapshot('source_changed') }),
+      prepareBaseline: () => ({ ...preview('source_changed'), reviewScope }),
+    });
+    await app.until(() => app.text().includes('Source changed since review'), 'tracked source');
+    await app.click('Review current version');
+    assert.ok(app.nodes('SectionMessage').some(node => node.props.appearance === 'error'));
+    assert.equal(app.approvals().length, 0);
+    assert.equal(app.nodes('CodeBlock').length, 0);
+    assert.ok(!app.calls.some(call => call.name === 'confirmBaseline'));
+  });
+}
