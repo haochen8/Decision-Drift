@@ -1,10 +1,12 @@
 # Decision Drift
 
-A Forge technical spike for Codegeist 2026. The product direction is to connect Jira work with the Confluence decisions behind it, then make changed or missing evidence visible before a release.
+A Forge app for software teams that keeps the Confluence decision behind a Jira issue in view. It remembers a reviewed source version, restores that source on the next visit, and shows when the page or work item changes.
 
-The spike focuses on one reviewable path: inspect a Confluence source, prepare an update, and add a source-linked Jira comment only after the user reviews it. The comment records the source URL, page version and review ID without copying the page's title or text into Jira.
+The current feature adds a shared reviewed source per Jira issue. Inspect a page, review its complete supported text, and explicitly save that version as the comparison point. Subsequent checks show reviewed versus published versions, work-item changes, and bounded text differences fetched from Confluence history with the current user's permissions. Saving a review does not post a Jira comment.
 
-Reviews expire after ten minutes. Confirmation rechecks the acting user's access and rejects changes to the issue or source since preview. Server-side operation claims block duplicate writes, and an unconfirmed write is reported as an unknown outcome rather than retried automatically. The comment is additive; the spike does not rewrite an issue description or decide whether a release should ship. The successful read, preview and approved write have passed live verification; failure cases and concurrent submissions remain covered by local tests pending separate cloud checks.
+Review previews expire after ten minutes. Confirmation rechecks access and source/work-item freshness; conditional Forge Custom Entity transactions prevent an older pending review from replacing a newer review. Durable records contain metadata and fingerprints, never source titles or body text. Historical excerpts are fetched afresh; inaccessible or incomplete history remains visibly unresolved. Text changes establish freshness, not semantic requirements conflict.
+
+An optional source-link Jira note retains its own exact preview and explicit approval. It records page/version/review ID without copying source titles or text. Its operation claim blocks duplicate submission of the same review and preserves uncertain write outcomes for manual reconciliation. Neither action rewrites the issue description.
 
 ## Account and cost
 
@@ -26,7 +28,7 @@ npm run lint
 
 These commands check local code. They do not prove that the app is registered, deployed, installed or authorized in Atlassian.
 
-`npm run lint` currently runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. The test suite contains 15 fixture-based logic tests.
+`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. The suite currently contains 56 checks, including backend scenarios, bounded document parsing, and 11 journeys through the real bundled React/UI Kit event handlers.
 
 ## Connect the app
 
@@ -46,13 +48,24 @@ The [small synthetic Jira/Confluence fixture](docs/atlassian-setup.md#5-create-t
 
 ## Verification status
 
-Local verification: 15 focused tests cover the reviewed-write flow, source format validation, approval binding, staleness, permission loss, concurrent approvals and uncertain write outcomes. These use an in-memory API adapter, not live Atlassian services.
+On November 3, 2026, all 56 local checks, compilation and official Forge lint passed for persistent reviewed-source tracking. Independent implementation reviews caught and fixed the auto-load form API mismatch, an idempotent receipt that could name the wrong reviewed version, and a misleading historical-access warning for a different source. CAS races, source changes, denied access and the actual UI approval gates have regression coverage. Live verification of the new Custom Entity persistence is still pending; the previously deployed access/comment spike is verified below.
 
 The core live spike passed on `decision-drift.atlassian.net`: authentication, registration, official Forge lint, development deployment, installation in both products, Forge current-user reads from Jira and Confluence, a preview without a comment, and one explicitly approved comment. The app read source page **557057** at **version 1** and created [comment 10003 on DD-1](https://decision-drift.atlassian.net/browse/DD-1?focusedCommentId=10003). Independent Jira API inspection confirmed exactly one comment, the matching review ID and unchanged original description. No source title or body was copied into the comment. [Current spike status and limitations](docs/spike-status.md).
 
-The current development version is **2.2.0**. Use **Chrome Incognito** for the verified flow. The regular browser session remained on loading bars, including with a text-only probe and a temporary site-only AdBlock pause; its exact cause is unresolved. The full interface is restored and AdBlock is active again. No payment method, billing settings, product subscription or licensed seat was changed. [Sanitized API evidence](docs/evidence/live-review-result.json). The native browser success screenshots remain local because they include personal browser bookmarks.
+The last verified cloud version is **2.2.0**. Use **Chrome Incognito** for that flow. The regular browser session remained on loading bars, including with a text-only probe and a temporary site-only AdBlock pause; its exact cause is unresolved. The full interface is restored and AdBlock is active again. No payment method, billing settings, product subscription or licensed seat was changed. [Sanitized API evidence](docs/evidence/live-review-result.json). The native browser success screenshots remain local because they include personal browser bookmarks.
 
-Production judge installation and live stale/expired/concurrent/denied-user checks remain separate follow-up work. The successful development-site flow does not establish those results.
+Production judge installation and live stale/expired/concurrent/denied-user checks remain separate follow-up work. Local/runtime tests and the successful development-site spike do not establish those results.
+
+## Next features and winning strategy
+
+Codegeist gives equal weight to platform implementation, coherent design, credible audience impact, originality and presentation. The feature sequence therefore prioritizes a working review story that a judge can reproduce in a fresh site. [Official judging criteria](https://codegeist2026.devpost.com/#judging-criteria).
+
+1. **Persistent source review — implemented, awaiting new cloud verification.** Prove the full sequence: review v1, reopen unchanged, publish v2, see a changed-source warning and text evidence, explicitly review v2, then reopen unchanged. Keep Jira notes separate. Record actual outcomes after deployment.
+2. **Relevant decision passage — next implementation.** Let a reviewer select an exact decision passage and map it to a Jira requirement. Verify the selection on the server and distinguish a change to that passage from an unrelated page edit. Ambiguous, deleted or inaccessible passages must request review. The demo should contrast an unrelated edit with an admin-only-to-member-access decision change.
+3. **Release review queue.** Present a small, bounded set of linked issues with changed/unresolved/reviewed states and clear next actions. The queue must respect each viewer's current permissions. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
+4. **Judge-ready delivery.** Verify installation on a separate site, provide repeatable synthetic setup data, complete the remaining live failure tests, and record an end-to-end demo designed to fit three minutes. Production distribution and submission are later milestones.
+
+After every implementation, review correctness and the product flow, fix findings, run relevant checks, and commit and push the completed change. No external AI service, paid model call or billing change is needed for the current feature or the next passage-comparison slice.
 
 The [live verification runbook](docs/atlassian-setup.md#live-verification-runbook) covers source reads, preview, confirmed writes, permission failures and duplicate submissions. Use synthetic issues and pages in the development site.
 

@@ -1,9 +1,11 @@
 import api, { route } from '@forge/api';
-import { kvs } from '@forge/kvs';
+import { kvs, Filter, FilterConditions } from '@forge/kvs';
 import Resolver from '@forge/resolver';
 import spike from './spike.cjs';
+import drift from './drift.cjs';
 
 const { createSpike, SpikeError, sourceFromPage } = spike;
+const { createDrift } = drift;
 const resolver = new Resolver();
 
 async function checked(response, product, expected = 200) {
@@ -30,10 +32,15 @@ const gateway = {
     const page = await checked(response, 'Confluence');
     return sourceFromPage(page, origin);
   },
+  async readSourceVersion(pageId, origin, version) {
+    const response = await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?version=${version}&body-format=atlas_doc_format`);
+    const page = await checked(response, 'Confluence history');
+    return sourceFromPage(page, origin, { expectedVersion: version });
+  },
   async postComment(issueId, body, previewId) {
     const response = await api.asUser().requestJira(route`/rest/api/3/issue/${issueId}/comment`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ body, properties: [{ key: 'decision-drift.review', value: { previewId, kind: 'access-spike' } }] })
+      body: JSON.stringify({ body, properties: [{ key: 'decision-drift.review', value: { previewId, kind: 'source-reference' } }] })
     });
     return checked(response, 'Jira comment', 201);
   }
@@ -54,10 +61,30 @@ const store = {
 };
 
 const service = createSpike({ gateway, store });
-for (const name of ['inspectSource', 'prepareUpdate', 'applyUpdate']) {
+const entityName = 'decision-baseline';
+const baselineStore = {
+  get: key => kvs.entity(entityName).get(key),
+  async compareAndSet(key, expectedRevision, value) {
+    const conditions = new Filter().and('revision', expectedRevision === 0
+      ? FilterConditions.notExists() : FilterConditions.equalTo(expectedRevision));
+    try {
+      // No TTL: baselines outlive expiring previews. The condition and write are atomic.
+      await kvs.transact().set(key, value, { entityName, conditions }).execute();
+      return true;
+    } catch (error) {
+      // Never treat quota/validation/outage failures as successful conditional writes.
+      const current = await kvs.entity(entityName).get(key);
+      if ((current?.revision ?? 0) !== expectedRevision) return false;
+      throw error;
+    }
+  }
+};
+const decisionService = createDrift({ gateway, store, baselineStore });
+const handlers = { ...service, ...decisionService };
+for (const name of Object.keys(handlers)) {
   resolver.define(name, async ({ context, payload }) => {
     try {
-      return await service[name](context, payload);
+      return await handlers[name](context, payload);
     } catch (error) {
       if (error instanceof SpikeError) throw new Error(`${error.code}: ${error.message}`);
       // SDK consent errors must propagate so Forge can request current-user consent.

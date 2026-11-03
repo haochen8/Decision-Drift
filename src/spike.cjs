@@ -54,18 +54,27 @@ function parsePageInput(input, origin) {
 function adfText(document) {
   let nodes = 0;
   const walk = (node, depth = 0) => {
-    if (!node || depth > 40 || ++nodes > 20000) return '';
-    if (node.type === 'text') return typeof node.text === 'string' ? node.text : '';
+    if (!node || typeof node !== 'object' || typeof node.type !== 'string' ||
+        (node.content !== undefined && !Array.isArray(node.content)) || depth > 40 || ++nodes > 20000) {
+      fail('UNSUPPORTED_PAGE', 'This document is too complex to inspect completely. Use a smaller published text page.');
+    }
+    if (node.type === 'text') {
+      if (typeof node.text !== 'string') fail('UNSUPPORTED_PAGE', 'This document contains malformed text and cannot be reviewed completely.');
+      return node.text;
+    }
     if (node.type === 'hardBreak') return '\n';
     const text = Array.isArray(node.content) ? node.content.map(child => walk(child, depth + 1)).join('') : '';
+    if (['tableCell', 'tableHeader'].includes(node.type)) return `${text}\t`;
     return ['paragraph', 'heading', 'listItem', 'tableRow'].includes(node.type) ? `${text}\n` : text;
   };
   return walk(document).trim();
 }
 
-function sourceFromPage(page, origin) {
-  if (page.status !== 'current' || page.subtype === 'live') {
-    fail('UNPUBLISHED_PAGE', 'Use a published Confluence page. Drafts and live docs are outside this spike.');
+function sourceFromPage(page, origin, { expectedVersion } = {}) {
+  const historical = expectedVersion !== undefined;
+  if ((historical && (!Number.isInteger(expectedVersion) || expectedVersion < 1 || page.version?.number !== expectedVersion)) ||
+      !(historical ? ['current', 'historical'] : ['current']).includes(page.status) || page.subtype === 'live') {
+    fail('UNPUBLISHED_PAGE', historical ? 'The requested published source version is unavailable.' : 'Use a published Confluence page. Drafts and live docs cannot be reviewed.');
   }
   const value = page.body?.atlas_doc_format?.value;
   let document;
@@ -78,20 +87,42 @@ function sourceFromPage(page, origin) {
   } catch {
     fail('UNSUPPORTED_PAGE', 'This page did not provide a supported document body. Use a small published text page.');
   }
+  const text = adfText(document);
+  if (text.length > 16000) fail('UNSUPPORTED_PAGE', 'This page exceeds the 16,000-character review limit. Use a smaller decision page so its complete text can be reviewed.');
+  const representedTypes = new Set(['doc', 'text', 'hardBreak', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'table', 'tableRow', 'tableCell', 'tableHeader', 'blockquote', 'codeBlock', 'rule', 'panel', 'expand', 'nestedExpand']);
+  const hasUnrepresentedContent = node => !representedTypes.has(node.type) || Boolean(node.content?.some(hasUnrepresentedContent));
   return {
     id: String(page.id), title: page.title, version: page.version?.number,
     url: `${origin}/wiki/pages/viewpage.action?pageId=${encodeURIComponent(page.id)}`,
-    text: adfText(document).slice(0, 4000), hash: digest(document)
+    text, hash: digest(document), textHash: digest(text), hasUnrepresentedContent: hasUnrepresentedContent(document)
   };
 }
+
+async function inspectSnapshot(gateway, context, pageInput) {
+  const actor = identity(context);
+  const [site, issue] = await Promise.all([gateway.readSite(), gateway.readIssue(actor.issueId)]);
+  const origin = siteOrigin(site);
+  const sourceId = parsePageInput(pageInput, origin);
+  const source = await gateway.readSource(sourceId, origin);
+  if (String(issue.id) !== actor.issueId) fail('INVALID_CONTEXT', 'The returned issue does not match the open Jira issue.');
+  if (String(source.id) !== sourceId) fail('INVALID_SOURCE', 'Confluence returned a different page.');
+  if (!Number.isInteger(source.version) || source.version < 1) fail('INVALID_SOURCE', 'The page has no published version.');
+  return { actor, issue, source, origin };
+}
+
+const publicView = ({ issue, source, origin }) => ({
+  issue: { key: issue.key, summary: issue.summary, updated: issue.updated },
+  source: { id: source.id, title: source.title, version: source.version, url: source.url, text: source.text, hasUnrepresentedContent: Boolean(source.hasUnrepresentedContent) },
+  runtime: { siteUrl: origin, access: 'Current signed-in user', writeMode: 'Reviewed Jira comment' }
+});
 
 function makeComment(previewId, issueKey, source) {
   // Keep source quotations and restricted titles out of the broader Jira comment audience.
   const lines = [
-    'Decision Drift — reviewed access spike',
+    'Decision Drift — reviewed source reference',
     `I reviewed Confluence page ${source.id} at version ${source.version} from ${issueKey}.`,
     `Source: ${source.url}`,
-    'This records an explicit review and verifies Jira write access. It does not certify requirements alignment.',
+    'This note records a reviewed source reference. The tracked review version is saved separately in Decision Drift.',
     `Review ID: ${previewId}`
   ];
   return {
@@ -104,23 +135,7 @@ function makeComment(previewId, issueKey, source) {
 }
 
 function createSpike({ gateway, store, now = Date.now, newId = randomUUID }) {
-  async function inspect(context, pageInput) {
-    const actor = identity(context);
-    const [site, issue] = await Promise.all([gateway.readSite(), gateway.readIssue(actor.issueId)]);
-    const origin = siteOrigin(site);
-    const sourceId = parsePageInput(pageInput, origin);
-    const source = await gateway.readSource(sourceId, origin);
-    if (String(issue.id) !== actor.issueId) fail('INVALID_CONTEXT', 'The returned issue does not match the open Jira issue.');
-    if (String(source.id) !== sourceId) fail('INVALID_SOURCE', 'Confluence returned a different page.');
-    if (!Number.isInteger(source.version) || source.version < 1) fail('INVALID_SOURCE', 'The page has no published version.');
-    return { actor, issue, source, origin };
-  }
-
-  const publicView = ({ issue, source, origin }) => ({
-    issue: { key: issue.key, summary: issue.summary, updated: issue.updated },
-    source: { id: source.id, title: source.title, version: source.version, url: source.url, text: source.text },
-    runtime: { siteUrl: origin, access: 'Current signed-in user', writeMode: 'Reviewed Jira comment' }
-  });
+  const inspect = (context, pageInput) => inspectSnapshot(gateway, context, pageInput);
 
   async function inspectSource(context, payload = {}) {
     return publicView(await inspect(context, payload.pageInput));
@@ -134,7 +149,7 @@ function createSpike({ gateway, store, now = Date.now, newId = randomUUID }) {
     const preview = {
       ...snapshot.actor, previewId, expiresAt, origin: snapshot.origin,
       issueKey: snapshot.issue.key,
-      issueHash: digest({ updated: snapshot.issue.updated, description: snapshot.issue.description }),
+      issueHash: digest({ updated: snapshot.issue.updated, summary: snapshot.issue.summary, description: snapshot.issue.description }),
       sourceId: snapshot.source.id, sourceVersion: snapshot.source.version,
       sourceHash: snapshot.source.hash,
       commentText: comment.text, commentBody: comment.body
@@ -163,7 +178,7 @@ function createSpike({ gateway, store, now = Date.now, newId = randomUUID }) {
     if (existing?.status === 'applied') return { ...existing.result, alreadyApplied: true };
     if (existing) fail('OUTCOME_UNKNOWN', 'This review has already started. Check Jira for its Review ID before preparing another comment. Automatic retries are blocked.');
     if (source.version !== preview.sourceVersion || source.hash !== preview.sourceHash ||
-      digest({ updated: issue.updated, description: issue.description }) !== preview.issueHash) {
+      digest({ updated: issue.updated, summary: issue.summary, description: issue.description }) !== preview.issueHash) {
       fail('STALE_PREVIEW', 'The source or issue changed after preview. Prepare and approve a new review.');
     }
 
@@ -195,4 +210,4 @@ function createSpike({ gateway, store, now = Date.now, newId = randomUUID }) {
   return { inspectSource, prepareUpdate, applyUpdate };
 }
 
-module.exports = { createSpike, SpikeError, parsePageInput, siteOrigin, adfText, sourceFromPage, digest, PREVIEW_MS };
+module.exports = { createSpike, SpikeError, parsePageInput, siteOrigin, adfText, sourceFromPage, digest, PREVIEW_MS, UUID, identity, inspectSnapshot, publicView };
