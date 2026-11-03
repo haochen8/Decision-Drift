@@ -1,5 +1,47 @@
 # Technical spike status
 
+## Current feature evidence — November 3, 2026
+
+Current status: **persistent reviewed-source tracking is implemented, locally reviewed and deployed as development version 2.3.0; its new live browser journeys remain unverified**. The source change [1c8adab](https://github.com/haochen8/Decision-Drift/commit/1c8adab) was pushed to the repository, now at [haochen8/Decision-Drift](https://github.com/haochen8/Decision-Drift). The October 29 access/comment result below remains a successful historical result on version 2.2.0, not evidence that the new persistent-review flow has passed live.
+
+### Implemented behavior and review
+
+- `loadTrackedSource`, `inspectDecisionSource`, `prepareBaseline` and `confirmBaseline` add source inspection, explicit baseline review and automatic restoration of the source tracked for a Jira issue.
+- One shared baseline per Jira issue is stored in the durable `decision-baseline` Custom Entity. Conditional compare-and-set transactions check its revision before replacement. Baselines have no TTL and retain metadata, reviewer identity and fingerprints rather than source titles or body text; review previews remain a separate expiring record.
+- Current and historical source text is read afresh with `asUser()` permissions. The historical page ID, version and content/text hashes must match the reviewed metadata before displaying an ordered line comparison. Differences are bounded; inaccessible, incomplete or unverifiable history remains unresolved. Text changes are not a semantic requirements verdict.
+- Saving a baseline updates review metadata only. Optional source-linked Jira notes retain their own exact preview and approval; they are a separate action.
+- Independent reviews found and fixed the unsupported `useForm` `setValue` call during auto-load, a replay receipt that could identify the current rather than reviewed source version, and a misleading history warning when inspecting a different page. Regression tests cover the fixes.
+
+The feature uses the existing scopes and adds no external model service. No model billing, payment method, billing setting, licensed seat, subscription or scope change was made for this update.
+
+### November 3 verification evidence
+
+| Check | Status | Observed evidence and limit |
+| --- | --- | --- |
+| Source change | Pushed | Commit `1c8adab`, persistent source-review tracking and version drift, in the renamed canonical repository |
+| Independent implementation reviews | Completed; findings fixed | Auto-load form API, reviewed-version replay receipt and different-page history warning corrected with regression coverage |
+| Local test suite | Passed — 56 checks | 15 original spike + 24 drift + 6 source + 11 real bundled UI/runtime checks; product/storage boundaries are simulated |
+| Local manifest/compilation check | Passed | `npm run check` |
+| Official Forge lint | Passed | Official Forge linter reported no issues |
+| Development deployment | Passed — CLI success | Version `2.3.0`, deployed `2026-11-03T17:17:59.773Z` / 18:17:59.773 CET |
+| Custom Entity readiness | Active | `decision-baseline` entity, `by-key` index **ACTIVE**; provisioning is not proof of a successful live baseline transaction |
+| Existing installation | Up to date at major version 2 | Installation `7ca78514-4089-4bc2-b3fa-969ef8f72a46`, Jira required and Confluence connected |
+| Version 2.3.0 native browser UI | Pending — not performed | Browser-control call aborted before dispatch; no new native UI result recorded |
+| Actual baseline save and reopen | Pending — not performed | No live `confirmBaseline` receipt, durable save or automatic-restoration result recorded |
+| Actual page edit and history comparison | Pending — not performed | No new synthetic page edit, changed-source view or verified historical line comparison recorded |
+| Live conditional baseline conflict/replay | Pending | Local coverage does not verify the deployed Custom Entity transaction behavior |
+| Billing, licensing and scopes | Unchanged | No additional model service, payment, billing, seat, subscription or scope change |
+
+The browser-control abort occurred **before dispatch**, so it is not evidence of an app failure or a repeat of the October 29 loading skeleton. An asynchronous question asks whether the user wants to resume browser control or follow manual steps; the reply is pending. No live version 2.3.0 save/reopen/history journey is marked passed.
+
+### Next verification and feature
+
+Resume the browser sequence when the user responds, or follow [Persistent source review verification](atlassian-setup.md#persistent-source-review-verification) manually: inspect the actual source version, explicitly save it, reopen the issue, edit only the synthetic Confluence page, inspect the change/history, review the new version and reopen again. Record the actual deployed version, source versions and outcomes. A metadata-only baseline save does not require posting another Jira comment.
+
+The next planned feature is [relevant decision passage mapping](../README.md#next-features-and-winning-strategy): select an exact source passage, map it to a Jira requirement and distinguish an edit to that passage from an unrelated page edit. It is planned, not implemented or live-verified by this update.
+
+## Historical record — October 29, 2026
+
 Date: October 29, 2026 (Europe/Stockholm).
 
 Development site supplied by the user: `decision-drift.atlassian.net`. The app is deployed in **MyDevSpace** (ID `9a51ac9c-b744-4082-b6b8-02df00013d27`) and connected to Jira and Confluence. Forge-mediated current-user reads, persisted preview, explicit approval and one additive Jira comment have now been verified in Incognito.

@@ -40,10 +40,9 @@ Forge compute, storage and logging have monthly free allowances. Native Forge LL
 
 ## 3. Authenticate the local CLI
 
-The repository pins Node.js **22.23.4** as a local development dependency for Forge CLI **15.0.0**. After dependency installation, npm scripts pick up that project-local Node executable. This handles an older host patch release without replacing the machine's global Node installation. No global Forge install or `sudo` is necessary.
+The repository pins Node.js **22.23.4** as a local development dependency for Forge CLI **15.0.0**. Run these commands from your repository checkout. After dependency installation, npm scripts pick up that project-local Node executable. This handles an older host patch release without replacing the machine's global Node installation. No global Forge install or `sudo` is necessary.
 
 ```bash
-cd AI-Agents-For-Founders
 npm ci
 npm run forge -- --version
 ```
@@ -170,7 +169,7 @@ Use your actual values. Do not include an API token, password, recovery code or 
 
 For each new run, treat a check as unverified until its actual result is recorded. See the [spike status](spike-status.md) for completed live results. Record the code revision, environment, date, expected outcome and observed outcome when running checks. Keep access tokens and private content out of evidence.
 
-Open the fixture issue and its **Decision Drift** issue panel. Paste its published Confluence page URL or numeric ID into **Confluence page URL or ID**, choose **Check access**, then **Preview reviewed update**. Review the exact comment, tick the approval checkbox and choose **Apply reviewed update** only when you intend to add it. Check the resulting comment in Jira itself.
+For the optional Jira note, open the fixture issue and its **Decision Drift** issue panel. Paste the published Confluence page URL or numeric ID into **Confluence decision source**, choose **Check source** (or **Recheck source**), then **Preview source-link note**. Review the exact note, tick its approval checkbox and choose **Add reviewed Jira note** only when you intend to post it. Check the resulting comment in Jira itself. Saving a tracked source version is a separate action, described below.
 
 The proposed comment contains a source URL, page ID/version and review ID. It deliberately excludes the source title and quoted text because the Jira audience may differ from the Confluence audience. It records a review, not a judgment that the requirements align. A preview expires after **ten minutes**, and confirmation rereads the issue and source as the acting user.
 
@@ -194,9 +193,24 @@ The proposed comment contains a source URL, page ID/version and review ID. It de
 
 Source reads and reviewed writes require real Atlassian credentials and a real installed app. Local tests can validate logic and failure handling; they cannot establish that these cloud checks passed.
 
-The 15 local fixture tests exercise source-format validation, approval, preview expiry, user/issue/site binding, changes since preview, revoked source access, concurrent requests, replay, unknown outcomes and untrusted caller payloads. They use simulated gateways and storage; a passing result does not verify Atlassian's live APIs, authorization or atomic KVS behavior.
+The original 15 spike tests exercise source-format validation, approval, preview expiry, user/issue/site binding, changes since preview, revoked source access, concurrent requests, replay, unknown outcomes and untrusted caller payloads. The current suite additionally covers durable review baselines, conditional revision races, complete source parsing and real bundled UI event journeys. Tests use simulated product/storage boundaries; a passing result does not verify Atlassian's live APIs or cloud transaction behavior.
 
 The permission check can use a controlled test account you administer; it does not require recruiting another person. If no such account is available, record the denied-user check as pending rather than inferring it passed from an administrator's successful read.
+
+## Persistent source review verification
+
+This feature stores one shared source-review baseline per Jira issue in the `decision-baseline` Custom Entity. It uses the existing scopes. Entity records have no TTL and contain only page/version, issue/source fingerprints, reviewer identity and review metadata. Historical text is fetched with current-user access instead of being retained in storage.
+
+Use the existing synthetic issue **DD-1** and source page **557057** in Chrome Incognito. This sequence saves review metadata and edits only the synthetic source page; it does not require another Jira comment.
+
+1. Open the Decision Drift issue panel. Enter `557057` and select **Check source**. Record the actual published version; do not assume it is still version 1.
+2. Select **Review current version**, inspect the source, select the approval checkbox, and select **Save reviewed version**. Confirm the receipt identifies the saved version and says no Jira comment was posted.
+3. Reopen the issue. The source must restore automatically, with the same reviewed and published versions and **Source unchanged since review**. Confirm that the Jira description and comment count have not changed.
+4. Edit the synthetic Confluence page's constraint from project admins only to project members, then publish the next version. Do not edit the Jira issue. Recheck the tracked source: it must report **Source changed since review**, show the old and current versions, and display verified removed/added text when history is accessible. An unavailable comparison must remain a warning.
+5. Review and explicitly save the new source version. Reopen again and verify the unchanged state. The optional **Preview source-link note** action is separate and is not needed for this test.
+6. For a separate stale-review check, prepare a review, edit/publish the synthetic page again, and then confirm the old preview. Expect `STALE_PREVIEW`; the prior saved review must remain in effect. Reload and prepare a fresh review.
+
+Record each observation and the deployed version in the status document. Until these steps are actually performed, report them as pending. The 56 current local/runtime checks cover these behaviors but do not substitute for live Custom Entity and history API verification.
 
 ## Judge installation later
 

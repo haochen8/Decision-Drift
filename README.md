@@ -16,10 +16,9 @@ You need **one Atlassian account**, a **Forge Developer Space**, and an **Atlass
 
 ## Local setup
 
-Use Node.js 22 and npm to install the dependencies. The repository pins Node.js **22.23.4** and Forge CLI **15.0.0** locally; after installation, npm scripts pick up that local runtime. This meets the CLI's minimum patch requirement without changing the global Node installation. The app's deployed runtime is `nodejs22.x`.
+From your repository checkout, use Node.js 22 and npm to install the dependencies. The repository pins Node.js **22.23.4** and Forge CLI **15.0.0** locally; after installation, npm scripts pick up that local runtime. This meets the CLI's minimum patch requirement without changing the global Node installation. The app's deployed runtime is `nodejs22.x`.
 
 ```bash
-cd AI-Agents-For-Founders
 npm ci
 npm test
 npm run check
@@ -44,15 +43,15 @@ Create a scoped token for **Forge** using Atlassian's recommended scopes and pas
 
 This checkout is registered as **Decision Drift** in **MyDevSpace** and its manifest contains the real app ID. Reuse that registration when deploying; do not register again or run `forge create` over this repository. The setup guide describes the steps for a separate, fresh checkout.
 
-The [small synthetic Jira/Confluence fixture](docs/atlassian-setup.md#5-create-the-synthetic-live-fixture) is already available on this development site: issue **DD-1** and Confluence page **557057**. Reuse these fixtures for read-only checks. A new approved review creates another comment.
+The [small synthetic Jira/Confluence fixture](docs/atlassian-setup.md#5-create-the-synthetic-live-fixture) is already available on this development site: issue **DD-1** and Confluence page **557057**. Saving a reviewed source version updates app state only. Explicitly adding a reviewed Jira note creates another comment.
 
 ## Verification status
 
-On November 3, 2026, all 56 local checks, compilation and official Forge lint passed for persistent reviewed-source tracking. Independent implementation reviews caught and fixed the auto-load form API mismatch, an idempotent receipt that could name the wrong reviewed version, and a misleading historical-access warning for a different source. CAS races, source changes, denied access and the actual UI approval gates have regression coverage. Live verification of the new Custom Entity persistence is still pending; the previously deployed access/comment spike is verified below.
+On November 3, 2026, all 56 local checks, compilation and official Forge lint passed for persistent reviewed-source tracking. Independent implementation reviews caught and fixed the auto-load form API mismatch, an idempotent receipt that could name the wrong reviewed version, and a misleading historical-access warning for a different source. CAS races, source changes, denied access and the actual UI approval gates have regression coverage. Development version **2.3.0** deployed successfully at `2026-11-03T17:17:59.773Z`; the `decision-baseline` entity's default index is **ACTIVE** and the existing Jira/Confluence installation is up to date. The browser save/reopen/page-edit/history sequence remains pending; the earlier access/comment spike is verified below. [Live verification steps](docs/atlassian-setup.md#persistent-source-review-verification).
 
 The core live spike passed on `decision-drift.atlassian.net`: authentication, registration, official Forge lint, development deployment, installation in both products, Forge current-user reads from Jira and Confluence, a preview without a comment, and one explicitly approved comment. The app read source page **557057** at **version 1** and created [comment 10003 on DD-1](https://decision-drift.atlassian.net/browse/DD-1?focusedCommentId=10003). Independent Jira API inspection confirmed exactly one comment, the matching review ID and unchanged original description. No source title or body was copied into the comment. [Current spike status and limitations](docs/spike-status.md).
 
-The last verified cloud version is **2.2.0**. Use **Chrome Incognito** for that flow. The regular browser session remained on loading bars, including with a text-only probe and a temporary site-only AdBlock pause; its exact cause is unresolved. The full interface is restored and AdBlock is active again. No payment method, billing settings, product subscription or licensed seat was changed. [Sanitized API evidence](docs/evidence/live-review-result.json). The native browser success screenshots remain local because they include personal browser bookmarks.
+The deployed development version is **2.3.0**; the prior end-to-end access/comment check passed on **2.2.0** in **Chrome Incognito**. The regular browser session remained on loading bars, including with a text-only probe and a temporary site-only AdBlock pause; its exact cause is unresolved. The full interface is restored and AdBlock is active again. No payment method, billing settings, product subscription or licensed seat was changed. [Earlier sanitized API evidence](docs/evidence/live-review-result.json). Native browser success screenshots remain local because they include personal browser bookmarks.
 
 Production judge installation and live stale/expired/concurrent/denied-user checks remain separate follow-up work. Local/runtime tests and the successful development-site spike do not establish those results.
 
@@ -60,7 +59,7 @@ Production judge installation and live stale/expired/concurrent/denied-user chec
 
 Codegeist gives equal weight to platform implementation, coherent design, credible audience impact, originality and presentation. The feature sequence therefore prioritizes a working review story that a judge can reproduce in a fresh site. [Official judging criteria](https://codegeist2026.devpost.com/#judging-criteria).
 
-1. **Persistent source review — implemented, awaiting new cloud verification.** Prove the full sequence: review v1, reopen unchanged, publish v2, see a changed-source warning and text evidence, explicitly review v2, then reopen unchanged. Keep Jira notes separate. Record actual outcomes after deployment.
+1. **Persistent source review — implemented and deployed, awaiting the live browser sequence.** Prove the full sequence: review v1, reopen unchanged, publish v2, see a changed-source warning and text evidence, explicitly review v2, then reopen unchanged. Keep Jira notes separate. Record actual outcomes after the live run.
 2. **Relevant decision passage — next implementation.** Let a reviewer select an exact decision passage and map it to a Jira requirement. Verify the selection on the server and distinguish a change to that passage from an unrelated page edit. Ambiguous, deleted or inaccessible passages must request review. The demo should contrast an unrelated edit with an admin-only-to-member-access decision change.
 3. **Release review queue.** Present a small, bounded set of linked issues with changed/unresolved/reviewed states and clear next actions. The queue must respect each viewer's current permissions. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
 4. **Judge-ready delivery.** Verify installation on a separate site, provide repeatable synthetic setup data, complete the remaining live failure tests, and record an end-to-end demo designed to fit three minutes. Production distribution and submission are later milestones.
