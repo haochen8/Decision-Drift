@@ -6,6 +6,8 @@ The **core selected review queue sequence PASSED live in regular Chrome on devel
 
 The repeatable judge demo kit is now implemented and independently reviewed, with **140 local tests passing**. Its live fixture setup displayed **all five queue states** at **11:29:18 CET** on the existing 2.5.0 deployment. A human then corrected DD-5's synthetic Jira description and explicitly approved its version 2 passage review; the **11:33:02 CET** queue refresh changed only that issue from Needs review to Matches review. The fixture remains after repair, with no live reset claimed.
 
+Latest browser finding: **ordinary regular-Chrome issue-panel checks succeeded on DD-1, DD-2 and DD-5**. DD-5 survived a full reload at `2/2`; a native new DD-2 tab loaded and restored `4/4`, completed Recheck source and displayed the exact current text. Native navigation in that tab then restored DD-1 at `2/2` and DD-5 at `2/2`. Some automation-associated startups still stalled with a pending iframe document. This supersedes the earlier blanket regular-profile loading limitation; the exact startup/CDP/network cause remains unproven. The app, source, settings and deployment were not changed for this comparison.
+
 - The resolver requires trusted project-page context and freshly verifies the project, then resolves each canonical issue as the signed-in user and checks its actual project ID/key. Caller-supplied project IDs, issue IDs and site URLs do not authorize access.
 - A server-only tracking reader reuses the existing reviewed-source and passage logic with the already authorized Jira snapshot. It is not exposed as a resolver. The queue returns only selected keys, fresh authorized summaries, status/reason, reviewed/current versions, checked-at time and an issue link; it returns no source body, title, quotations, fingerprints or account IDs.
 - The five states are Matches review, Context changed, Needs review, Source not linked and Could not verify. Only a confirmed absent baseline becomes Source not linked. Permission, history, storage, service and rate-limit failures retain unresolved states; Forge consent errors propagate to the host.
@@ -14,6 +16,25 @@ The repeatable judge demo kit is now implemented and independently reviewed, wit
 - Local verification includes 131 checks: the prior 97 plus 17 queue integration tests and 17 queue UI/runtime journeys. Compilation of both native frontends, official Forge lint and whitespace checks pass. Local product/storage boundaries remain simulated.
 
 The tested implementation is published on GitHub as [41bbc26](https://github.com/haochen8/Decision-Drift/commit/41bbc26). GitHub's Git transport rejected three ordinary fast-forward pushes with internal server errors. The authorized fallback created an API commit with the same reviewed file tree, `a9960918afba2abcf856c28c2172825a7ae15c7c`, and advanced main with an expected-parent check. The checkout was synchronized after verifying identical trees; the original local deployment commit `3f59e3e` remains on the local backup branch `codex/review-queue-local-3f59e3e`.
+
+### Ordinary regular-browser verification — November 4
+
+| Check | Status | Observed evidence and limit |
+| --- | --- | --- |
+| Existing regular DD-5 tab | Passed — actual panel and full reload | Source `2129921`, reviewed/published `2/2`; the real panel returned after a full reload through the browser controller |
+| Fresh automation-associated DD-2 tab | Startup stalled | Jira host skeleton; one Forge iframe document request pending/Stalled, 0 B, provisional headers; no response code or error captured |
+| Claimed DD-5 navigation to DD-2 | Startup stalled | The same host-skeleton behavior appeared after navigation; association with automation does not identify a cause |
+| Observed iframe document | Available by direct navigation | Its observed URL equaled the working DD-5 document URL; direct navigation returned Webpack App HTML with bridge/main script references, not proof of embedded startup |
+| Ordinary native new DD-2 tab | Passed — regular Chrome | Cmd+T and the canonical Jira issue URL, without binding that new tab to the automation extension, loaded the real Decision Drift panel |
+| DD-2 full reload and restoration | Passed — native Cmd+R | Source `1605635`, reviewed/published `4/4`, last review **2026-11-03 20:12:38 CET** restored |
+| DD-2 current-user recheck and text | Passed — actual app controls | Recheck source completed; Read current text showed `Constraint: Only project members may export CSV data.` and the correct Jira description |
+| Native address-bar navigation to DD-1 | Passed — same regular tab | Source `557057`, reviewed/published `2/2`, last review **2026-11-03 19:04:19 CET** restored |
+| Native address-bar navigation to DD-5 | Passed — same regular tab | Source `2129921`, reviewed/published `2/2`, last review **2026-11-04 11:32:52 CET** restored |
+| Claim already working DD-5 tab for screenshot | App remained visible | Correct panel DOM remained after the claim; no post-claim reload was tested, so claiming alone is not established as a cause |
+| Runtime or settings changes | None | No app/source edit, redeployment, SDK/dependency, cache, extension, browser/security, billing or payment change |
+| Exact root cause | Unproven | Pending iframe request is not a captured status-0/network-error failure; missing logs do not establish absence of app execution |
+
+See the [sanitized regular-browser record](evidence/2026-11-04-regular-browser.json) and [native startup runbook](atlassian-setup.md#browser-startup-verification). An observation clock read **12:06:45 UTC / 13:06:45 CET** around the DD-2 evidence; exact per-action times were not recorded. [Atlassian ECO-1823](https://jira.atlassian.com/browse/ECO-1823) reports a similar shell symptom with an actual status-0/network failure; this pending request is not a confirmed instance of that issue. No browser-preconnect or SDK change is justified by the recorded evidence. No Save, approval, comment or document edit was performed in these checks. Historical October 29 and November 3 observations below retain their original dates and limits.
 
 ### Judge demo kit and five-state live evidence
 
@@ -54,7 +75,7 @@ See the [sanitized judge-demo record](evidence/2026-11-04-judge-demo.json). The 
 | All five queue states | Verified in the later judge-demo batch | These three earlier batches established Matches review and Could not verify; the five-state result is separately recorded above |
 | Controlled late-response / concurrency races | Not run live | Local/runtime coverage remains separate from controlled live timing |
 
-See the [sanitized queue record](evidence/2026-11-04-queue-review.json). The regular-profile issue panel still has its previously observed loading issue; the project queue works in that profile. Issue-panel recovery was in progress during these earlier checks; the later successful fixture review saves are recorded above. No payment, billing, subscription, seat, scope or security setting was changed.
+See the [sanitized queue record](evidence/2026-11-04-queue-review.json). The issue panel showed a regular-profile skeleton during these earlier checks while the queue worked. The later ordinary native-tab success and automation-associated startup stalls are recorded above; a blanket regular-profile rendering limitation is superseded. No payment, billing, subscription, seat, scope or security setting was changed.
 
 An earlier attempt did not start: the browser extension was unavailable and native Chrome input was stopped before navigation after fresh-state recovery. No queue request or write ran during that attempt. Browser control subsequently resumed and the successful sequence above supersedes that prerequisite as the current status.
 

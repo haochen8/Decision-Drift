@@ -1,0 +1,136 @@
+{
+  "evidenceDate": "2026-11-04",
+  "timezone": "Europe/Stockholm",
+  "exactObservationTimesCaptured": false,
+  "observationClockAroundDd2Evidence": "2026-11-04T12:06:45Z",
+  "site": "https://decision-drift.atlassian.net",
+  "environment": "development",
+  "forgeVersion": "2.5.0",
+  "browser": "Regular Chrome",
+  "status": "ordinary_native_issue_panels_verified",
+  "observations": [
+    {
+      "action": "Inspect existing regular DD-5 panel and fully reload",
+      "key": "DD-5",
+      "sourceId": "2129921",
+      "reviewedVersion": 2,
+      "publishedVersion": 2,
+      "realPanelVisible": true,
+      "reloadMethod": "browser_controller_reload",
+      "fullReloadPassed": true
+    },
+    {
+      "action": "Open a fresh automation-associated DD-2 tab",
+      "key": "DD-2",
+      "hostLoadingSkeleton": true,
+      "iframeDocumentRequestsObserved": 1,
+      "iframeDocumentState": "pending/Stalled",
+      "bytesTransferredObserved": 0,
+      "provisionalHeadersVisible": true,
+      "responseCodeCaptured": false,
+      "networkErrorCaptured": false,
+      "sameObservedDocumentUrlAsWorkingDD5": true
+    },
+    {
+      "action": "Open the observed CDN iframe document directly",
+      "documentHtmlAvailable": true,
+      "webpackAppAndBridgeMainScriptReferencesVisible": true,
+      "embeddedStartupEstablishedByThisCheck": false,
+      "rawDocumentUrlIncluded": false
+    },
+    {
+      "action": "Navigate the claimed DD-5 tab to DD-2",
+      "hostLoadingSkeleton": true,
+      "exactCauseEstablished": false
+    },
+    {
+      "action": "Use ordinary native Chrome Cmd+T and paste canonical DD-2 URL",
+      "newTabBoundToAutomationExtension": false,
+      "key": "DD-2",
+      "realPanelVisible": true,
+      "sourceId": "1605635",
+      "reviewedVersion": 4,
+      "publishedVersion": 4,
+      "lastReviewedAt": "2026-11-03T20:12:38+01:00"
+    },
+    {
+      "action": "Fully reload ordinary native DD-2 tab with Cmd+R",
+      "realPanelRestored": true,
+      "sourceId": "1605635",
+      "reviewedVersion": 4,
+      "publishedVersion": 4,
+      "sameReviewTimestampRestored": true
+    },
+    {
+      "action": "Explicitly recheck source and read current text",
+      "key": "DD-2",
+      "recheckCompleted": true,
+      "readCurrentTextCompleted": true,
+      "sourceConstraint": "Constraint: Only project members may export CSV data.",
+      "correctCurrentJiraDescriptionVisible": true
+    },
+    {
+      "action": "Use the native address bar to navigate the same regular tab to DD-1",
+      "key": "DD-1",
+      "realPanelVisible": true,
+      "sourceId": "557057",
+      "reviewedVersion": 2,
+      "publishedVersion": 2,
+      "lastReviewedAt": "2026-11-03T19:04:19+01:00"
+    },
+    {
+      "action": "Use the native address bar to navigate the same regular tab to DD-5",
+      "key": "DD-5",
+      "realPanelVisible": true,
+      "sourceId": "2129921",
+      "reviewedVersion": 2,
+      "publishedVersion": 2,
+      "lastReviewedAt": "2026-11-04T11:32:52+01:00"
+    },
+    {
+      "action": "Claim the already working DD-5 tab for a screenshot",
+      "correctAppDomStillVisible": true,
+      "reloadAfterClaimTested": false,
+      "claimingAloneEstablishedAsCause": false
+    }
+  ],
+  "interpretation": {
+    "blanketRegularProfileRenderingFailureSuperseded": true,
+    "startupDifferenceAssociatedWithAutomation": true,
+    "exactCdpOrNetworkRootCauseEstablished": false,
+    "pendingRequestIsNotAConfirmedStatusZeroFailure": true,
+    "missingLogsProveNoExecution": false,
+    "runtimePatchJustifiedByTheseObservations": false
+  },
+  "relatedReport": {
+    "url": "https://jira.atlassian.com/browse/ECO-1823",
+    "similarity": "Jira host skeleton around a Forge iframe document startup problem",
+    "reportedFailure": "Status 0 / captured network error",
+    "observedFailureHere": "Pending/Stalled; no response status or network error captured",
+    "confirmedMatch": false
+  },
+  "notVerified": [
+    "Exact cause of automation-associated startup stalls",
+    "A captured response/error for the pending iframe document",
+    "Reloading DD-5 after the final screenshot claim",
+    "Separate-site production judge installation",
+    "Denied-user and remaining live freshness/concurrency cases"
+  ],
+  "changes": {
+    "runtimePatch": false,
+    "redeployment": false,
+    "appOrSourceEdit": false,
+    "sdkOrDependencyChange": false,
+    "browserOrPreconnectSettings": false,
+    "cacheCleared": false,
+    "extensionOrSecuritySettings": false,
+    "billingOrPaymentSettings": false
+  },
+  "writesDuringThisVerification": {
+    "saveOrApproval": false,
+    "jiraComment": false,
+    "documentEdit": false
+  },
+  "rawHarOrContextUrlsIncluded": false,
+  "accountIdsOrPrivateCapturesIncluded": false
+}
