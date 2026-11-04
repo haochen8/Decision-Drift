@@ -1,0 +1,67 @@
+{
+  "evidenceDate": "2026-11-04",
+  "timezone": "Europe/Stockholm",
+  "site": "https://decision-drift.atlassian.net",
+  "environment": "development",
+  "forgeVersion": "2.5.0",
+  "deploymentTimestamp": "2026-11-04T09:44:45.003Z",
+  "sourceCommit": "41bbc26f25a892ba52b788b14db7d16ee780388c",
+  "deployedLocalCommit": "3f59e3ef98292a580deae971c440a70590370737",
+  "verifiedIdenticalTree": "a9960918afba2abcf856c28c2172825a7ae15c7c",
+  "installation": "Existing major version 2; Jira and Confluence connected; up to date",
+  "localVerification": {
+    "checks": 131,
+    "passed": 131,
+    "failed": 0,
+    "newQueueIntegrationTests": 17,
+    "newQueueRuntimeJourneys": 17,
+    "totalRuntimeJourneys": 41,
+    "backendAndBothFrontendsCompile": true,
+    "officialForgeLintPassed": true,
+    "stagedDiffReviewed": true,
+    "independentSecurityAndProductReviewCompleted": true,
+    "productAndStorageBoundariesSimulated": true
+  },
+  "usageBounds": {
+    "maximumSelectedIssues": 8,
+    "workersPerBatch": 2,
+    "maximumProductReadsPerBatch": 26,
+    "maximumBaselineReadsPerBatch": 8,
+    "queueWrites": 0,
+    "polling": false,
+    "automaticRetries": false,
+    "overlappingBatchesFromThisPage": false,
+    "paidAiServiceAdded": false
+  },
+  "publication": {
+    "gitTransportAttempts": 3,
+    "gitTransportOutcome": "GitHub internal server error",
+    "fallback": "GitHub Git Data API with exact tree verification and expected-parent ref update",
+    "remoteBranch": "main",
+    "expectedParent": "6bbbecb8670d89b5521479b9722cf783c7c87889",
+    "forcedUpdate": false
+  },
+  "liveQueueVerification": {
+    "status": "not_started",
+    "reason": "Browser control unavailable before navigation; extension unavailable and native input stopped before dispatch after recovery",
+    "queueProductRequestsRun": 0,
+    "fixtureEdits": 0,
+    "reviewsSaved": 0,
+    "commentsAdded": 0
+  },
+  "notVerifiedLive": [
+    "Project page navigation and actual resolver project context",
+    "Selection rendering and refresh on the development site",
+    "Partial access failures in the live queue",
+    "All five queue states on a synthetic live dataset",
+    "Separate-site production judge installation"
+  ],
+  "settingsChanges": {
+    "paymentMethodAdded": false,
+    "billingSettingsChanged": false,
+    "subscriptionsChanged": false,
+    "licensedSeatsChanged": false,
+    "scopesChanged": false,
+    "browserProtectionChanged": false
+  }
+}

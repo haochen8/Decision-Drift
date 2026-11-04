@@ -242,6 +242,8 @@ Open **Decision Drift** from the Jira project's app navigation, rather than from
 
 The local queue tests exercise all five statuses, history limitations, rate/service/storage failures, consent, privacy and concurrency. They do not establish live cloud results. The maximum is one explicit batch of eight issues with two workers, at most 26 product reads and eight baseline reads, and no background refresh. Keep full API responses and private browser captures out of public evidence.
 
+Development **2.5.0** deployed successfully on November 4 and its existing Jira/Confluence installation is up to date. The browser check above remains pending: browser control was unavailable before navigation, so no live queue product request ran. Resume with the small existing synthetic selection when browser control is available. [Deployment and local verification record](evidence/2026-11-04-queue-review.json).
+
 ## Judge installation later
 
 After the live spike passes, deploy the reviewed build to production:

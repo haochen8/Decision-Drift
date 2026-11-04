@@ -2,7 +2,7 @@
 
 ## Current feature evidence — November 4, 2026
 
-The **selected review queue is implemented and independently reviewed**. It adds a native Jira project page for one to eight unique current-project issue keys. Cloud deployment and queue browser verification are pending; the latest prior live version remains 2.4.0, recorded below.
+The **selected review queue is implemented, independently reviewed and deployed as development 2.5.0**. It adds a native Jira project page for one to eight unique current-project issue keys. Deployment succeeded at `2026-11-04T09:44:45.003Z` / 10:44:45.003 CET, and the existing major-version-2 Jira/Confluence installation is up to date. Queue browser verification remains pending; the latest prior live-verified feature remains 2.4.0, recorded below.
 
 - The resolver requires trusted project-page context and freshly verifies the project, then resolves each canonical issue as the signed-in user and checks its actual project ID/key. Caller-supplied project IDs, issue IDs and site URLs do not authorize access.
 - A server-only tracking reader reuses the existing reviewed-source and passage logic with the already authorized Jira snapshot. It is not exposed as a resolver. The queue returns only selected keys, fresh authorized summaries, status/reason, reviewed/current versions, checked-at time and an issue link; it returns no source body, title, quotations, fingerprints or account IDs.
@@ -10,6 +10,10 @@ The **selected review queue is implemented and independently reviewed**. It adds
 - The page clears results when editing or refreshing, rejects malformed responses, ignores obsolete responses and waits for a pending batch before allowing another check. Runtime review caught and fixed result validation for mismatched issue identity, missing timestamps, a false matching state with inaccessible metadata and a mismatched project.
 - Each explicit batch has at most eight issue checks and two workers, with one project read and one site read. Worst-case product reads are 26, plus eight baseline reads. No polling, automatic retry, writes, new scopes, storage entity, dependency, AI service or billing change is introduced.
 - Local verification includes 131 checks: the prior 97 plus 17 queue integration tests and 17 queue UI/runtime journeys. Compilation of both native frontends, official Forge lint and whitespace checks pass. Local product/storage boundaries remain simulated.
+
+The tested implementation is published on GitHub as [41bbc26](https://github.com/haochen8/Decision-Drift/commit/41bbc26). GitHub's Git transport rejected three ordinary fast-forward pushes with internal server errors. The authorized fallback created an API commit with the same reviewed file tree, `a9960918afba2abcf856c28c2172825a7ae15c7c`, and advanced main with an expected-parent check. The checkout was synchronized after verifying identical trees; the original local deployment commit `3f59e3e` remains on the local backup branch `codex/review-queue-local-3f59e3e`.
+
+The live queue check did not start. The browser extension was unavailable and native Chrome input was stopped before navigation after fresh-state recovery. No queue request, fixture edit, review or comment was performed. This is a browser-control limitation, not an observed queue failure. See the [sanitized queue record](evidence/2026-11-04-queue-review.json). No payment, billing, subscription, seat, scope or security setting was changed.
 
 The next feature is a reproducible four-issue synthetic judge demo kit, with setup/reset instructions for all important queue states. A separate-site installation and remaining live failure checks follow. The older selected-queue plan below is retained as the plan that led to this implementation.
 
