@@ -265,13 +265,32 @@ The later judge-demo sequence below verified all five states live. Denied-user a
 
 ## Reproducible judge demo
 
-Run `npm run demo-kit` for the canonical copyable text and selections, or `npm run demo-kit -- --verify` to check the scenario offline. The portable input is [judge-demo.json](../fixtures/judge-demo.json). This tool exercises the real app services through simulated adapters and performs no account or network actions. Keep its offline result separate from observed cloud evidence.
+Judges can complete this setup entirely in the browser. The canonical copyable text and selections are in [judge-demo.json](../fixtures/judge-demo.json). Contributors can optionally run `npm run demo-kit` to print the plan or `npm run demo-kit -- --verify` to check it offline. That tool exercises the real app services through simulated adapters and performs no account or network actions; keep its offline result separate from observed cloud evidence.
 
 Create four fresh issues in one project and one published Confluence page. Record actual keys and versions by role. Keep DD-1 and DD-2 as the earlier verification fixtures. Use the fixture's exact summaries/descriptions and its `source.initialParagraphs` for the initial published page.
 
+Publish a page titled **Decision Drift judge demo** with these paragraphs:
+
+```text
+Decision: Export is available to project admins only.
+Constraint: Download links expire after seven days.
+Format: Export columns follow the saved view order.
+Rollout: The pilot begins in November.
+Evidence: This page contains synthetic judge demo data.
+```
+
+Create the four synthetic issue descriptions below. Use each complete description as its Jira requirement passage; copy the source passage exactly from the page. These values mirror the canonical fixture.
+
+| Role | Jira issue description / requirement passage | Source passage to review |
+| --- | --- | --- |
+| Matching | `CSV export columns follow the saved view order.` | `Format: Export columns follow the saved view order.` — review after publishing the changed page |
+| Context | `Export download links expire after seven days.` | `Constraint: Download links expire after seven days.` — review the initial page |
+| Edited | `CSV export is available to project admins only.` | `Decision: Export is available to project admins only.` — review the initial page |
+| Unlinked | `CSV exports include UTF-8 column headers.` | Leave this issue without a review |
+
 1. In **Context**, inspect the shared page, select the declared expiration sentence and Jira requirement, preview both, explicitly approve and save. Repeat for **Edited** using its initial admin-only access pair. Complete each save before the next review.
 2. Publish `source.currentParagraphs` as the next version of that same page. It changes the access decision from admins-only to members-only and the rollout month from November to December. Record the actual version; never assume a reset starts at v1.
-3. In **Matching**, explicitly review the declared column-order pair against the current page. Leave **Unlinked** without any saved review. Reload the issue panels, then check the four keys in the project queue. Expect Matches review, Context changed, Needs review and Source not linked respectively.
+3. In **Matching**, explicitly review the declared column-order pair against the current page. Leave **Unlinked** without any saved review. Reload the issue panels, then check the four keys in the project queue. Expect Matches review, Context changed, Needs review and Source not linked respectively. To show the fifth state, add a key confirmed not to exist in that project: expect Could not verify without summary, versions or issue link. This checks a missing issue, not a denied user's access.
 4. Inspect Context's matching expiration passages and surrounding changes. Context still requires human judgment. In Edited, compare the verified earlier access passage with the current decision. A human then edits only that synthetic issue's description to `repair.descriptionParagraphs`, rechecks, explicitly selects the new source/requirement pair, previews, approves and saves. The app does not rewrite the requirement.
 5. Refresh the queue. Only Edited should move to Matches review; Context and Unlinked keep their states. Confirm that the three other Jira descriptions and all comment counts stay unchanged. Record the intended human description change separately from app behavior.
 
@@ -287,16 +306,49 @@ The cloud fixture is left **after repair**, with DD-5 reviewed at source version
 
 The planned presentation lasts 2:40: selected queue (0:00–0:25), changed context (0:25–0:50), human correction and approved rereview (0:50–1:55), queue refresh (1:55–2:20), then the unlinked starting state and evidence limits (2:20–2:40). This is a script target, not a measured recording duration or time-saving claim. Separate-site judge installation remains a later check. No new app deployment, scope, dependency, security-setting or payment change was required for this fixture sequence.
 
-## Judge installation later
+## Judge quickstart — release draft
 
-After the live spike passes, deploy the reviewed build to production:
+**Availability:** the Sharing draft was reviewed and **cancelled without saving**; a fresh Developer Console check confirmed **Not sharing** and no installation link. Reviewed source `76e9cb6` deployed privately as production **2.0.0** at `2026-11-04T14:59:06.673Z`, with its baseline index **ACTIVE**. Jira and Confluence are connected through one production installation on the temporary second site. Its first explicit review, full-reload restoration and mixed queue check passed, with an unchanged Jira description and no comments. The install used the contributor CLI route. Reviewer-data lifecycle work is the next implementation before outside installation; the browser setup below remains a release draft. The temporary site expires **February 2, 2027**, so judges will install on their own eligible site. [Private production readiness](evidence/2026-11-04-production-readiness.json).
 
-```bash
-npm run forge -- deploy --environment production
-```
+### Site and account prerequisites
 
-In the Developer Console, open the app's Distribution controls, choose **Sharing** for external judges and generate the installation link. Provide product requirements, configuration and sample-data instructions with it. Judges must be site admins to install; a logged-out preview or a link to your own Jira session does not replace installation access.
+Use **Jira and Confluence on the same Atlassian Cloud site**, with a site-admin account for installation. The person running the demo needs Jira product access and project permissions to browse, create and edit its synthetic issues, plus Confluence access to view and publish the source page and read its history. Site administration alone does not establish those product/project permissions. In a Jira Service Management project, confirm the reviewer's existing product access and appropriate project role. **Add comments** is needed only for the optional Jira-note action; the review demonstration does not require a comment.
 
-Marketplace listing is optional for the main Codegeist entry. Licensed or Marketplace-submitted apps have sharing-link restrictions, so keep the spike unlicensed and use the ordinary distribution path. [Forge app distribution](https://developer.atlassian.com/platform/forge/distribute-your-apps/).
+Judges do not need Forge CLI, Node, a Developer Space or an API token. Sign in through Atlassian normally and keep passwords, tokens and session information out of setup notes.
 
-Keep the app and instructions usable throughout judging, January 5–February 3, 2027. Recheck [the Codegeist rules](https://codegeist2026.devpost.com/rules) before submission.
+### Install and connect through the browser
+
+1. Once the release is available, open its approved installation link while signed in as the site admin. Select the intended site and review Decision Drift's permissions before installing.
+2. Install in **Jira first**, the manifest's required product. Connect **Confluence on the same site to that existing installation**, using the installation's connection controls; do not create an unrelated installation on a second site. Confluence is optional in the compatibility declaration, but the source-review demo needs it connected. Both products share the installation identity. [Forge app compatibility](https://developer.atlassian.com/platform/forge/app-compatibility/).
+3. Confirm the installation shows both product connections. Open a synthetic Jira issue and its **Decision Drift** panel; if the panel is hidden, use the issue's app-actions menu. If prompted, complete Atlassian's current-user app consent. Read failures should be resolved through the acting user's permissions and the product connection, rather than by assuming the installing admin granted every user content access.
+
+The current unlicensed [manifest](../manifest.yml) requests these exact scopes:
+
+| Scope | Used for |
+| --- | --- |
+| `read:jira-work` | Current-user issue and project reads |
+| `write:jira-work` | The separately previewed and approved optional Jira comment |
+| `read:page:confluence` | Current and historical published source-page reads |
+| `storage:app` | Installation-local reviewed metadata and expiring review records |
+
+The manifest declares no external fetch egress, remote service or paid app license. No external model key is required. Production and development installations have separate review storage; begin with a fresh production review even if you have used the same issue in development. Forge hosted storage is scoped to the installation. [Forge storage isolation](https://developer.atlassian.com/platform/forge/storage-reference/).
+
+### First review and complete demonstration
+
+1. Create a fresh synthetic Jira issue and publish a small Confluence page on the same site. Copy its numeric page ID or full canonical page URL.
+2. Open Decision Drift on the issue, enter that source, and choose **Check source**. Inspect the current Jira description, complete supported source text and published version. A fresh installation starts without the development site's saved reviews.
+3. For a whole-page baseline, choose **Review current version**. For a passage link, select **Link specific decision and requirement passages**, copy one exact unique source passage and one exact unique Jira **description** passage, then choose **Review linked passages**. Read the returned preview, check its explicit approval and choose **Save reviewed version** or **Save reviewed passage link**. This saves review metadata; the Jira-note preview is a separate optional action.
+4. Fully reload the issue and confirm source/version restoration. Open Decision Drift from the project sidebar, enter the issue key and explicitly check it in the selected queue.
+5. Use the [browser-only four-case fixture setup and human repair](#reproducible-judge-demo) above. Record your own issue keys/page versions rather than using the development site's DD keys. After a prepared five-state check, manually correct only Edited's description and explicitly rereview its new passage pair; queue refresh should change only that row. Context changed still requires human judgment.
+
+If the host shows grey loading bars, use the [ordinary native-tab and full-reload comparison](#browser-startup-verification). Visible app controls and their loading indicators differ from Jira's host skeleton. Keep browser protections enabled; no default extension, cache or speculative-preconnect change is needed.
+
+### Maintainer release gate
+
+Private production deployment, index readiness, both product connections and fresh-site review/reload/queue checks have passed through the contributor installation route. The reviewed Sharing form draft was cancelled without Save; a fresh console check confirmed **Not sharing** and no link. No final Sharing confirmation was requested because reviewer-data lifecycle is the next release-readiness implementation. The proposed personal-data **Yes** declaration did not persist; the private console's default **No** remains unchanged, while the README factually describes the stored account IDs and review metadata.
+
+Before outside installation, inventory reviewer account IDs across baselines, previews and operation records, define retention, and implement personal-data reporting with erase/refresh handling or a validated minimization/migration approach. Include existing records and verify that approval binding, replay protection and ordinary reviews still work. Atlassian's guide calls for periodic reporting of stored personal data and handling its erase/refresh responses; it does not state a Forge-hosted-storage exemption. This is our release-readiness decision for the current account-ID/review-metadata classification, not a blanket legal conclusion about a bare account ID or a formal Sharing-UI requirement. [Official personal-data guide](https://developer.atlassian.com/platform/forge/user-privacy-guidelines/#reporting-user-personal-data-for-your-apps).
+
+After implementation and verification, publish the updated [privacy/data-handling section](../README.md#privacy-and-data-handling) and judge guide before a new Sharing review. Enabling **Sharing** materially expands who can install: Atlassian permits installation by anyone with the installation link **or app ID**, subject to site-admin rights. The app ID is already public in this repository. Future final browser confirmation is required before changing distribution or copying a judge installation link. Existing Jira/Confluence content remains governed by the acting user's permissions and installation-scoped storage. [Forge distribution controls](https://developer.atlassian.com/platform/forge/distribute-your-apps/).
+
+The current manifest is unlicensed; Marketplace listing is optional for the main Codegeist entry. Keep the approved production build and instructions usable throughout judging, January 5–February 3, 2027. Recheck the [Codegeist rules](https://codegeist2026.devpost.com/rules) before submission.

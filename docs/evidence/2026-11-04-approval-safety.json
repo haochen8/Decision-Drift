@@ -1,0 +1,83 @@
+{
+  "evidenceDate": "2026-11-04",
+  "timezone": "Europe/Stockholm",
+  "site": "https://decision-drift.atlassian.net",
+  "environment": "development",
+  "forgeVersion": "2.5.0",
+  "fixture": {
+    "issueKey": "DD-7",
+    "sourcePageId": "2129929",
+    "synthetic": true,
+    "isolatedFromEarlierFixtures": "DD-1 through DD-6"
+  },
+  "savedBaseline": {
+    "sourceVersion": 1,
+    "reviewedAt": "2026-11-04T16:02:56+01:00",
+    "explicitApprovalAndSaveObserved": true
+  },
+  "stalePreviewCheck": {
+    "status": "passed",
+    "previewSourceVersion": 2,
+    "previewApproved": true,
+    "previewExpiresAt": "2026-11-04T16:13:29+01:00",
+    "version2Edit": "Rollout changed from November to December",
+    "publishedVersionAtConfirmation": 3,
+    "version3Edit": "Decision changed from seven days to five days",
+    "saveClicks": 1,
+    "serverRejectedWith": "STALE_PREVIEW",
+    "nativeFullReloadVerified": true,
+    "reviewedVersionAfterReload": 1,
+    "publishedVersionAfterReload": 3,
+    "originalReviewTimestampPreserved": true
+  },
+  "expiryPreview": {
+    "sourceVersion": 3,
+    "approved": true,
+    "expiresAt": "2026-11-04T16:14:29+01:00",
+    "expiresAtUtc": "2026-11-04T15:14:29Z",
+    "leftUnsavedForExpiryObservation": true,
+    "uiExpiryObserved": true,
+    "uiMessage": "Review expired",
+    "approvalCheckedBeforeExpiry": true,
+    "saveEnabledBeforeExpiry": true,
+    "approvalCheckedAfterExpiry": false,
+    "approvalDisabledAfterExpiry": true,
+    "saveDisabledAfterExpiry": true,
+    "savedBaselineDisplayAfterExpiry": {
+      "reviewedVersion": 1,
+      "publishedVersion": 3,
+      "originalReviewTimestampPreserved": true
+    },
+    "finalPostExpiryFullReloadVerified": false,
+    "claimedExpiredTabReloadOutcome": "Host loading skeleton; no successful reload result claimed",
+    "finalPostExpiryRestorationVerified": true,
+    "finalRestorationMethod": "Fresh ordinary native Chrome tab opened canonical DD-7 URL",
+    "freshServerReadsObserved": true,
+    "restoredSourcePageId": "2129929",
+    "restoredReviewedVersion": 1,
+    "restoredPublishedVersion": 3,
+    "restoredReviewTimestamp": "2026-11-04T16:02:56+01:00",
+    "serverExpiryRejectionObserved": false,
+    "serverRequestPreventedByDisabledUi": true
+  },
+  "jiraComparison": {
+    "noChangeObserved": true,
+    "independentBeforeAfterApiCheck": "passed_for_expiry_interval",
+    "beforeReadTiming": "After STALE_PREVIEW rejection and before expiry",
+    "afterReadTiming": "After UI expiry",
+    "apiBaselineBeforeEntireStaleSequenceCaptured": false,
+    "descriptionAdfExactlyEqual": true,
+    "authoredDescriptionMatchesCurrentText": true,
+    "syntheticDescription": "Synthetic safety check only. CSV downloads expire after seven days. Keep this description unchanged during review checks.",
+    "commentsBefore": 0,
+    "commentsAfter": 0
+  },
+  "notVerifiedLive": [
+    "Server rejection of expired approval",
+    "An independent Jira API baseline before the entire stale sequence was not captured",
+    "Controlled concurrent reviewers and replay",
+    "Denied-user and inaccessible-source cases"
+  ],
+  "runtimeOrSettingsChangesRequired": false,
+  "secretsOrPrivateCapturesIncluded": false
+}

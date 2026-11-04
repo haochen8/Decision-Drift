@@ -1,0 +1,145 @@
+{
+  "evidenceDate": "2026-11-04",
+  "timezone": "Europe/Stockholm",
+  "sourceCommit": "76e9cb6",
+  "privateProductionMilestone": "complete",
+  "appCodeChanged": false,
+  "localVerification": {
+    "testsPassed": 140,
+    "compilationPassed": true,
+    "officialForgeLintPassed": true
+  },
+  "production": {
+    "status": "deployed_privately",
+    "version": "2.0.0",
+    "deployedAt": "2026-11-04T14:59:06.673Z",
+    "environmentId": "a6691244-951d-4745-9626-6b16b82b5389",
+    "storageEntity": "decision-baseline",
+    "storageIndex": "by-key",
+    "storageIndexStatus": "ACTIVE"
+  },
+  "testSite": {
+    "url": "https://one-atlas-aupy.atlassian.net",
+    "status": "ACTIVE",
+    "expiresOn": "2027-02-02",
+    "purpose": "Temporary separate-site validation only",
+    "judgingHost": false,
+    "jiraInstallation": "completed",
+    "confluenceConnection": "completed",
+    "sharedInstallationId": "b702f5a5-3a00-4978-9dbe-4379029803dc",
+    "installationMajorVersion": 2,
+    "installationUpToDate": true,
+    "installationRoute": "Private contributor CLI installation; no external installation link used",
+    "freshProductionReviewVerified": true,
+    "productionQueueVerified": true
+  },
+  "productionSmoke": {
+    "project": { "key": "DDIC", "type": "Team-managed Kanban", "visibility": "Private" },
+    "issue": {
+      "key": "DDIC-1",
+      "summary": "Verify Decision Drift on a separate site",
+      "description": "CSV downloads expire after seven days. Synthetic production installation check; keep this description unchanged."
+    },
+    "source": {
+      "id": "3866625",
+      "title": "Decision Drift production source",
+      "space": "EO",
+      "publishedVersion": 1,
+      "syntheticParagraphs": [
+        "Decision: CSV downloads expire after seven days.",
+        "Evidence: Synthetic separate-site installation check."
+      ]
+    },
+    "initialState": "Not reviewed",
+    "developmentBaselineNotPresented": true,
+    "currentUserReadsInBothProductsVerified": true,
+    "exactVersion1PreviewInspected": true,
+    "approvalInitiallyUnchecked": true,
+    "saveDisabledUntilExplicitApproval": true,
+    "explicitApprovalAndSaveObserved": true,
+    "reviewedAt": "2026-11-04T16:11:22+01:00",
+    "nativeFullReloadRestoredSource": true,
+    "reviewedVersionAfterReload": 1,
+    "publishedVersionAfterReload": 1,
+    "sameReviewTimestampRestored": true,
+    "independentJiraApiComparison": {
+      "descriptionAdfExactlyEqual": true,
+      "commentsBefore": 0,
+      "commentsAfter": 0
+    },
+    "queue": {
+      "status": "passed",
+      "navigation": "Native Jira project More menu to Decision Drift",
+      "results": [
+        { "key": "DDIC-1", "status": "matches_review", "reviewedVersion": 1, "publishedVersion": 1, "checkedAt": "2026-11-04T16:13:27+01:00" },
+        { "key": "DDIC-999999", "status": "could_not_verify", "checkedAt": "2026-11-04T16:13:26+01:00", "summaryVisible": false, "versionsVisible": false, "issueLinkVisible": false }
+      ]
+    }
+  },
+  "distribution": {
+    "status": "Not sharing",
+    "lastPersistedStatusVerified": "Not sharing",
+    "externalInstallAccessEnabled": false,
+    "judgeInstallationLinkPublished": false,
+    "judgeInstallationLinkGenerated": false,
+    "unsavedFormDraft": {
+      "prepared": true,
+      "reviewed": true,
+      "historicalProposalOnly": true,
+      "activeDraft": false,
+      "sharingSelection": "Sharing with anyone",
+      "company": "Independent hackathon project",
+      "supportUrl": "https://github.com/haochen8/Decision-Drift/issues",
+      "privacyUrl": "https://github.com/haochen8/Decision-Drift#privacy-and-data-handling",
+      "processesPersonalData": true,
+      "optionalTermsOfService": "blank",
+      "saveClicked": false,
+      "cancelClicked": true,
+      "status": "cancelled_without_saving"
+    },
+    "freshDomAfterCancel": { "status": "Not sharing", "installationLinkVisible": false },
+    "persistedConsolePersonalDataDeclaration": "No; unchanged private-app default; proposed Yes draft cancelled",
+    "finalSharingConfirmationRequested": false,
+    "finalBrowserConfirmationRequiredBeforeSharing": true,
+    "sharingWouldPermitInstallationUsingLinkOrAppId": true,
+    "existingContentPublishedBySharing": false
+  },
+  "manifest": {
+    "licensed": false,
+    "requiredProduct": "Jira",
+    "additionalProductNeededForDemo": "Confluence on the same site and installation",
+    "scopes": ["read:jira-work", "write:jira-work", "read:page:confluence", "storage:app"],
+    "externalDataEgressDeclared": false
+  },
+  "usageDashboard": {
+    "period": "2026-11-01 through 2026-11-04",
+    "displayedExtraUsageUsd": 0,
+    "displayedForecastUsd": 0,
+    "metricsRounded": true,
+    "possibleLagMinutes": 60,
+    "futureCostGuarantee": false
+  },
+  "pending": [
+    "Remaining live permission and approval-safety checks",
+    "Reviewer-data lifecycle implementation before outside installation",
+    "Future external-sharing confirmation and browser installation path after release-readiness work"
+  ],
+  "nextReleaseImplementation": {
+    "status": "planned_not_implemented",
+    "scope": "Reviewer-data retention, periodic reporting and erase/refresh handling, or validated minimization migration covering existing records",
+    "currentLimitation": "Baseline reviewer account IDs have no configured expiry or erasure workflow",
+    "classificationForThisReleaseDecision": "Account IDs linked to review metadata are treated as personal data",
+    "decision": "Complete the privacy lifecycle or validated minimization before external installation",
+    "formalSharingUiGateAsserted": false,
+    "universalLegalConclusionForBareAccountIdAsserted": false,
+    "officialGuide": "https://developer.atlassian.com/platform/forge/user-privacy-guidelines/#reporting-user-personal-data-for-your-apps"
+  },
+  "settingsChanges": {
+    "billing": false,
+    "security": false,
+    "licensedSeats": false,
+    "appLicensingFlags": false,
+    "scopes": false
+  },
+  "secretsOrPrivateCapturesIncluded": false
+}
