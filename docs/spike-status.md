@@ -4,6 +4,8 @@
 
 The **core selected review queue sequence PASSED live in regular Chrome on development 2.5.0**. It adds a native Jira project page for one to eight unique current-project issue keys. Deployment succeeded at `2026-11-04T09:44:45.003Z` / 10:44:45.003 CET, and the existing major-version-2 Jira/Confluence installation is up to date. Three mixed live batches verified existing reviewed sources alongside a nonexistent-issue partial failure, with no fixture, baseline, description or comment writes. Earlier 2.4.0 issue-panel evidence remains separately dated below.
 
+The repeatable judge demo kit is now implemented and independently reviewed, with **140 local tests passing**. Its live fixture setup displayed **all five queue states** at **11:29:18 CET** on the existing 2.5.0 deployment. A human then corrected DD-5's synthetic Jira description and explicitly approved its version 2 passage review; the **11:33:02 CET** queue refresh changed only that issue from Needs review to Matches review. The fixture remains after repair, with no live reset claimed.
+
 - The resolver requires trusted project-page context and freshly verifies the project, then resolves each canonical issue as the signed-in user and checks its actual project ID/key. Caller-supplied project IDs, issue IDs and site URLs do not authorize access.
 - A server-only tracking reader reuses the existing reviewed-source and passage logic with the already authorized Jira snapshot. It is not exposed as a resolver. The queue returns only selected keys, fresh authorized summaries, status/reason, reviewed/current versions, checked-at time and an issue link; it returns no source body, title, quotations, fingerprints or account IDs.
 - The five states are Matches review, Context changed, Needs review, Source not linked and Could not verify. Only a confirmed absent baseline becomes Source not linked. Permission, history, storage, service and rate-limit failures retain unresolved states; Forge consent errors propagate to the host.
@@ -12,6 +14,29 @@ The **core selected review queue sequence PASSED live in regular Chrome on devel
 - Local verification includes 131 checks: the prior 97 plus 17 queue integration tests and 17 queue UI/runtime journeys. Compilation of both native frontends, official Forge lint and whitespace checks pass. Local product/storage boundaries remain simulated.
 
 The tested implementation is published on GitHub as [41bbc26](https://github.com/haochen8/Decision-Drift/commit/41bbc26). GitHub's Git transport rejected three ordinary fast-forward pushes with internal server errors. The authorized fallback created an API commit with the same reviewed file tree, `a9960918afba2abcf856c28c2172825a7ae15c7c`, and advanced main with an expected-parent check. The checkout was synchronized after verifying identical trees; the original local deployment commit `3f59e3e` remains on the local backup branch `codex/review-queue-local-3f59e3e`.
+
+### Judge demo kit and five-state live evidence
+
+The portable [synthetic fixture](../fixtures/judge-demo.json), offline CLI and [setup/human-repair/forward-reset guide](atlassian-setup.md#reproducible-judge-demo) are complete. Independent code review found no blockers. The local suite has 140 tests: the prior 131 plus nine demo-kit tests. The offline scenario uses the real review and queue services with in-memory product/storage adapters; it performs explicit simulated reviews rather than seeding states. Its simulated repair result is separate from the actual cloud observations below.
+
+| Check | Status | Observed evidence and limit |
+| --- | --- | --- |
+| Shared synthetic source | Published through versions 1 and 2 | Page `2129921`; version 1 matched the fixture's initial text, then version 2 changed the access decision to project members and the rollout to December |
+| Context review | Passed — explicit live save | DD-4 expiration passage reviewed at version 1 on **2026-11-04 11:16:56 CET** |
+| Edited-access review | Passed — explicit live save | DD-5 admin-only access pair reviewed at version 1 on **11:25:45 CET** |
+| Matching review | Passed — explicit live save | DD-3 column-order pair reviewed at version 2 on **11:29:09 CET** |
+| Unlinked fixture | Preserved | DD-6 never reviewed |
+| Five-state queue batch | Passed — live at **11:29:18 CET** | DD-3 Matches review `2/2`; DD-4 Context changed `1/2`; DD-5 Needs review `1/2`; DD-6 Source not linked; DD-999999 Could not verify |
+| Unavailable-issue details | Passed — nonexistent issue only | DD-999999 showed no summary, versions or link; no denied-user or inaccessible-Confluence result is implied |
+| Human description correction | Passed — ordinary Jira inline editor | Only DD-5 was manually changed to `CSV export is available to project members only.`; the app did not rewrite the requirement |
+| Incognito source restoration and history | Passed — actual issue panel | DD-5 restored reviewed/current `1/2`, Needs review, exact earlier/current access and November/December rollout differences |
+| Approved version 2 rereview | Passed — explicit live save | Exact fresh passage pair previewed; unchecked approval and Save disabled; explicit approval then save at **11:32:52 CET**, receipt says no Jira comment posted |
+| After-repair queue refresh | Passed — live at **11:33:02 CET** | Only DD-5 changed to Matches review `2/2`; DD-3 remained matching `2/2`, DD-4 Context changed `1/2`, DD-6 unlinked and DD-999999 unavailable |
+| Independent before/after Jira comparison | Passed — authenticated API reads | DD-3/DD-4/DD-6 descriptions exactly unchanged; DD-5 only the intended manual correction; all four comments `0 → 0` |
+| Forward reset | Not run live | Cloud left after repair with source version 2 and DD-5 reviewed at version 2; reset procedure remains documented |
+| Deployment and settings | Existing build used | No new deployment, scopes, dependencies, security settings, payment or paid service change |
+
+See the [sanitized judge-demo record](evidence/2026-11-04-judge-demo.json). The planned **2:40** presentation is a script target, not a measured duration or time saving. Exact matching and the displayed queue states establish text/review continuity, not semantic agreement. Private browser captures remain outside commits. Denied-user/source-access, stale/expiry, controlled concurrency/replay and separate-site judge installation checks remain unrun live.
 
 ### November 4 core live queue evidence
 
@@ -26,14 +51,14 @@ The tested implementation is published on GitHub as [41bbc26](https://github.com
 | Issue navigation destination | Target verified; new-tab creation not verified | Row link href and manually opened Jira issue destination verified; automation could not locate a new tab after clicking the row action |
 | Independent read-only confirmation | Passed — authenticated Jira API comparison | Both descriptions exactly unchanged; DD-1 comments `1 → 1`, DD-2 `0 → 0`; no fixture edits or reviews saved |
 | Denied-user / inaccessible-Confluence behavior | Not run live | A deliberately nonexistent Jira issue does not establish these permission cases |
-| All five queue states | Not run live | These batches established Matches review and Could not verify; the complete synthetic state set remains to verify |
+| All five queue states | Verified in the later judge-demo batch | These three earlier batches established Matches review and Could not verify; the five-state result is separately recorded above |
 | Controlled late-response / concurrency races | Not run live | Local/runtime coverage remains separate from controlled live timing |
 
-See the [sanitized queue record](evidence/2026-11-04-queue-review.json). The regular-profile issue panel still has its previously observed loading issue; the project queue works in that profile. Incognito issue-panel recovery is in progress, with no new result claimed here. No payment, billing, subscription, seat, scope or security setting was changed.
+See the [sanitized queue record](evidence/2026-11-04-queue-review.json). The regular-profile issue panel still has its previously observed loading issue; the project queue works in that profile. Issue-panel recovery was in progress during these earlier checks; the later successful fixture review saves are recorded above. No payment, billing, subscription, seat, scope or security setting was changed.
 
 An earlier attempt did not start: the browser extension was unavailable and native Chrome input was stopped before navigation after fresh-state recovery. No queue request or write ran during that attempt. Browser control subsequently resumed and the successful sequence above supersedes that prerequisite as the current status.
 
-The next feature is a reproducible four-issue synthetic judge demo kit, with setup/reset instructions for all important queue states. A separate-site installation and remaining live failure checks follow. The older selected-queue plan below is retained as the plan that led to this implementation.
+The judge demo kit is implemented and its five-state setup plus human correction/rereview are verified live. Next verify a separate-site judge installation and the remaining permission/freshness failure cases. The older selected-queue plan below is retained as the plan that led to this implementation.
 
 ## Earlier feature evidence — November 3, 2026
 

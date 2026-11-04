@@ -1,0 +1,143 @@
+{
+  "evidenceDate": "2026-11-04",
+  "timezone": "Europe/Stockholm",
+  "site": "https://decision-drift.atlassian.net",
+  "environment": "development",
+  "forgeVersion": "2.5.0",
+  "newDeploymentRequired": false,
+  "fixture": "Synthetic judge demo data",
+  "portableFixture": "fixtures/judge-demo.json",
+  "offlineVerification": {
+    "implemented": true,
+    "independentCodeReview": "Completed with no blockers",
+    "localTestsPassed": 140,
+    "newDemoKitTests": 9,
+    "productAndStorageAdaptersSimulated": true,
+    "simulatedRepairIsNotLiveEvidence": true,
+    "plannedPresentationSeconds": 160,
+    "presentationDurationMeasured": false,
+    "timeSavingsMeasured": false
+  },
+  "source": {
+    "id": "2129921",
+    "initialVersion": 1,
+    "currentPublishedVersion": 2,
+    "initialTextMatchesPortableFixture": true,
+    "publishedChanges": [
+      {
+        "removed": "Decision: Export is available to project admins only.",
+        "added": "Decision: Export is available to project members only."
+      },
+      {
+        "removed": "Rollout: The pilot begins in November.",
+        "added": "Rollout: The pilot begins in December."
+      }
+    ]
+  },
+  "liveSetupReviews": [
+    {
+      "key": "DD-4",
+      "role": "context",
+      "sourceVersion": 1,
+      "reviewedAt": "2026-11-04T11:16:56+01:00",
+      "explicitApprovalAndSaveObserved": true
+    },
+    {
+      "key": "DD-5",
+      "role": "edited",
+      "sourceVersion": 1,
+      "reviewedAt": "2026-11-04T11:25:45+01:00",
+      "explicitApprovalAndSaveObserved": true
+    },
+    {
+      "key": "DD-3",
+      "role": "matching",
+      "sourceVersion": 2,
+      "reviewedAt": "2026-11-04T11:29:09+01:00",
+      "explicitApprovalAndSaveObserved": true
+    }
+  ],
+  "unlinkedFixture": {
+    "key": "DD-6",
+    "reviewNeverSaved": true
+  },
+  "liveQueueVerification": {
+    "status": "five_state_setup_passed",
+    "checkedAt": "2026-11-04T11:29:18+01:00",
+    "results": [
+      { "key": "DD-3", "role": "matching", "status": "matches_review", "reviewedVersion": 2, "publishedVersion": 2 },
+      { "key": "DD-4", "role": "context", "status": "context_changed", "reviewedVersion": 1, "publishedVersion": 2 },
+      { "key": "DD-5", "role": "edited", "status": "needs_review", "reviewedVersion": 1, "publishedVersion": 2 },
+      { "key": "DD-6", "role": "unlinked", "status": "not_linked", "reviewedVersion": null, "publishedVersion": null },
+      { "key": "DD-999999", "status": "could_not_verify", "summaryVisible": false, "versionsVisible": false, "issueLinkVisible": false }
+    ],
+    "nonexistentIssueIsNotDeniedUserEvidence": true,
+    "semanticAgreementEstablished": false
+  },
+  "liveHumanRepair": {
+    "key": "DD-5",
+    "status": "passed",
+    "manualDescriptionEdit": {
+      "method": "Ordinary Jira inline editor",
+      "before": "CSV export is available to project admins only.",
+      "after": "CSV export is available to project members only.",
+      "onlyThisIssueEdited": true,
+      "appRewroteRequirement": false
+    },
+    "incognitoIssuePanel": {
+      "trackedSourceRestored": true,
+      "reviewedVersionBefore": 1,
+      "publishedVersion": 2,
+      "statusBefore": "needs_review",
+      "exactAccessAndRolloutHistoryVisible": true,
+      "freshExactCurrentPairPreviewed": true,
+      "approvalInitiallyUnchecked": true,
+      "saveDisabledUntilExplicitApproval": true
+    },
+    "approvedRereviewVerified": true,
+    "reviewedAt": "2026-11-04T11:32:52+01:00",
+    "sourceVersion": 2,
+    "receipt": "Page 2129921 at version 2 is the saved comparison point for DD-5. No Jira comment was posted.",
+    "afterRepairQueueVerified": true,
+    "queueCheckedAt": "2026-11-04T11:33:02+01:00",
+    "onlyEditedRoleChangedStatus": true,
+    "queueResults": [
+      { "key": "DD-3", "role": "matching", "status": "matches_review", "reviewedVersion": 2, "publishedVersion": 2 },
+      { "key": "DD-4", "role": "context", "status": "context_changed", "reviewedVersion": 1, "publishedVersion": 2 },
+      { "key": "DD-5", "role": "edited", "status": "matches_review", "reviewedVersion": 2, "publishedVersion": 2 },
+      { "key": "DD-6", "role": "unlinked", "status": "not_linked", "reviewedVersion": null, "publishedVersion": null },
+      { "key": "DD-999999", "status": "could_not_verify", "summaryVisible": false, "versionsVisible": false, "issueLinkVisible": false }
+    ],
+    "independentJiraApiComparison": {
+      "DD-3": { "descriptionJsonUnchanged": true, "commentsBefore": 0, "commentsAfter": 0 },
+      "DD-4": { "descriptionJsonUnchanged": true, "commentsBefore": 0, "commentsAfter": 0 },
+      "DD-5": { "descriptionMatchesOnlyIntendedManualEdit": true, "commentsBefore": 0, "commentsAfter": 0 },
+      "DD-6": { "descriptionJsonUnchanged": true, "commentsBefore": 0, "commentsAfter": 0 }
+    }
+  },
+  "finalCloudState": {
+    "phase": "after_repair",
+    "sourceVersion": 2,
+    "editedIssueReviewedVersion": 2,
+    "forwardResetPerformedLive": false
+  },
+  "notVerifiedLive": [
+    "Forward reset of the judge fixture",
+    "Denied-user and inaccessible-Confluence behavior",
+    "Controlled concurrent or late-response races",
+    "Stale and expired review rejection",
+    "Replay and uncertain transaction recovery",
+    "Separate-site production judge installation"
+  ],
+  "settingsChanges": {
+    "paymentMethodAdded": false,
+    "billingSettingsChanged": false,
+    "subscriptionsChanged": false,
+    "licensedSeatsChanged": false,
+    "scopesChanged": false,
+    "dependenciesAdded": false,
+    "securitySettingsChanged": false,
+    "paidAiServiceAdded": false
+  },
+  "privateBrowserCapturesIncluded": false
+}

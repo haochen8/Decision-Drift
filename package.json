@@ -8,7 +8,8 @@
     "forge": "forge",
     "test": "node --test test/*.test.cjs",
     "lint": "node scripts/check.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "demo-kit": "node scripts/demo-kit.mjs"
   },
   "dependencies": {
     "@forge/api": "8.4.0",

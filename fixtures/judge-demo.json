@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "demoId": "csv-export-review-v1",
+  "source": {
+    "title": "Decision Drift judge demo",
+    "initialParagraphs": [
+      "Decision: Export is available to project admins only.",
+      "Constraint: Download links expire after seven days.",
+      "Format: Export columns follow the saved view order.",
+      "Rollout: The pilot begins in November.",
+      "Evidence: This page contains synthetic judge demo data."
+    ],
+    "currentParagraphs": [
+      "Decision: Export is available to project members only.",
+      "Constraint: Download links expire after seven days.",
+      "Format: Export columns follow the saved view order.",
+      "Rollout: The pilot begins in December.",
+      "Evidence: This page contains synthetic judge demo data."
+    ]
+  },
+  "cases": [
+    {
+      "role": "matching",
+      "summary": "Judge demo - preserve CSV column order",
+      "descriptionParagraphs": ["CSV export columns follow the saved view order."],
+      "review": {
+        "phase": "current",
+        "sourceQuote": "Format: Export columns follow the saved view order.",
+        "requirementQuote": "CSV export columns follow the saved view order."
+      },
+      "expectedQueueStatus": "matches_review"
+    },
+    {
+      "role": "context",
+      "summary": "Judge demo - expire download links",
+      "descriptionParagraphs": ["Export download links expire after seven days."],
+      "review": {
+        "phase": "initial",
+        "sourceQuote": "Constraint: Download links expire after seven days.",
+        "requirementQuote": "Export download links expire after seven days."
+      },
+      "expectedQueueStatus": "context_changed"
+    },
+    {
+      "role": "edited",
+      "summary": "Judge demo - review CSV export access",
+      "descriptionParagraphs": ["CSV export is available to project admins only."],
+      "review": {
+        "phase": "initial",
+        "sourceQuote": "Decision: Export is available to project admins only.",
+        "requirementQuote": "CSV export is available to project admins only."
+      },
+      "expectedQueueStatus": "needs_review",
+      "repair": {
+        "descriptionParagraphs": ["CSV export is available to project members only."],
+        "sourceQuote": "Decision: Export is available to project members only.",
+        "requirementQuote": "CSV export is available to project members only."
+      }
+    },
+    {
+      "role": "unlinked",
+      "summary": "Judge demo - include UTF-8 CSV headers",
+      "descriptionParagraphs": ["CSV exports include UTF-8 column headers."],
+      "review": null,
+      "expectedQueueStatus": "not_linked"
+    }
+  ]
+}

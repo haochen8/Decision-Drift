@@ -35,7 +35,31 @@ npm run lint
 
 These commands check local code. They do not prove that the app is registered, deployed, installed or authorized in Atlassian.
 
-`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. The suite now includes **131 local checks**: 15 comment-spike, 40 source/passage integration, 9 passage matching, 9 source parsing, 17 queue integration and 41 real bundled React/UI Kit journeys. Product and storage boundaries in local tests are simulated.
+`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. The suite now includes **140 local checks**: 15 comment-spike, 40 source/passage integration, 9 passage matching, 9 source parsing, 17 queue integration, 41 real bundled React/UI Kit journeys and 9 demo-kit checks. Product and storage boundaries in local tests are simulated.
+
+## Reproducible judge demo
+
+Run the portable synthetic demo kit locally:
+
+```bash
+npm run demo-kit
+npm run demo-kit -- --verify
+```
+
+The first command prints copyable source text, four issue descriptions, exact passage selections, setup/reset steps and a planned 2:40 demonstration. The second runs the same offline verification with a short result. Both use the real review and queue services with in-memory product/storage adapters. Expected states are assertions checked after execution; the tool never seeds a baseline or supplies a status to the app. It saves three explicit setup reviews, models a human Jira correction and rereview, and verifies that only the repaired row changes.
+
+| Role | Reviewed source | Expected prepared queue state |
+| --- | --- | --- |
+| Matching | Current page, stable column-order passage | Matches review |
+| Context | Initial page, unchanged expiration passage | Context changed |
+| Edited | Initial page, admin-only access passage | Needs review after the source changes to members-only |
+| Unlinked | Never reviewed | Source not linked |
+
+The kit uses four synthetic issues and one shared Confluence page. [Portable fixture](fixtures/judge-demo.json) · [Setup, human repair and forward reset](docs/atlassian-setup.md#reproducible-judge-demo). Its CLI runs entirely offline, needs no credentials or new dependency, and is excluded from the deployed app bundle. The kit passed independent code review and the local suite of 140 tests. Its planned 2:40 script is a presentation target, not a measured recording or time saving.
+
+The **live five-state setup and human repair passed on November 4** using shared source page **2129921**. DD-4 and DD-5 were explicitly reviewed at source version 1; the page was then published as version 2 with the members-only access decision and December rollout. DD-3 was explicitly reviewed at version 2, and DD-6 was left unreviewed. At **11:29:18 CET**, the queue showed DD-3 **Matches review** (`2/2`), DD-4 **Context changed** (`1/2`), DD-5 **Needs review** (`1/2`), DD-6 **Source not linked**, and nonexistent DD-999999 **Could not verify** without summary, versions or link.
+
+A human corrected only DD-5's Jira description from admins-only to members-only, then used the Incognito issue panel to inspect the source/history, preview the exact new passage pair and explicitly approve saving version 2 at **11:32:52 CET**. Queue refresh at **11:33:02 CET** changed only DD-5 to Matches review `2/2`. Independent Jira API comparisons confirmed the other three descriptions were exactly unchanged, DD-5 contained only the intended manual correction, and all four comment counts stayed **0 → 0**. The cloud fixture remains **after repair**; the documented forward reset has not been run live. [Sanitized judge-demo evidence](docs/evidence/2026-11-04-judge-demo.json). This used the existing 2.5.0 deployment; offline simulation and live observations are recorded separately.
 
 ## Connect the app
 
@@ -69,9 +93,9 @@ The **live source-review flow passed in Chrome Incognito**: explicitly save page
 
 The earlier access/comment spike passed on October 29 on `decision-drift.atlassian.net`: authentication, registration, official Forge lint, development deployment, installation in both products, Forge current-user reads, a preview without a comment, and one explicitly approved comment. It read source page **557057** at **version 1** and created [comment 10003 on DD-1](https://decision-drift.atlassian.net/browse/DD-1?focusedCommentId=10003). No source title or body was copied into that comment. [Verification status and limitations](docs/spike-status.md).
 
-The latest development deployment and core live-verified queue version is **2.5.0** in **regular Chrome**. The preceding issue-panel passage sequence used **2.4.0** in **Chrome Incognito**; normal-profile issue-panel loading remains unresolved. AdBlock is active again after its earlier diagnostic. No payment method, billing settings, product subscription, licensed seat or security setting was changed. [Earlier access/comment evidence](docs/evidence/live-review-result.json). Native browser screenshots remain local because they include personal browser bookmarks.
+The latest development deployment and core live-verified queue version is **2.5.0** in **regular Chrome**; the judge-demo repair used its issue panel in **Incognito**. The preceding passage sequence used **2.4.0**; normal-profile issue-panel loading remains unresolved. AdBlock is active again after its earlier diagnostic. No payment method, billing settings, product subscription, licensed seat or security setting was changed. [Earlier access/comment evidence](docs/evidence/live-review-result.json). Native browser screenshots remain local because they include personal browser bookmarks.
 
-Production judge installation and live moved-text/unavailable-evidence/stale/expired/concurrent/denied-user/replay checks remain separate follow-up work. The live queue's nonexistent-issue check does not establish denied-user or inaccessible-Confluence behavior. All five queue states and controlled late-response/concurrency races also remain unverified live. Local/runtime tests and the successful core sequences do not establish those results.
+Production judge installation and live moved-text/unavailable-evidence/stale/expired/concurrent/denied-user/replay checks remain separate follow-up work. The live queue's nonexistent-issue check does not establish denied-user or inaccessible-Confluence behavior. All five queue states have now been observed; controlled late-response/concurrency races remain unverified live. Local/runtime tests and the successful core sequences do not establish those remaining results.
 
 ## Next features and winning strategy
 
@@ -79,8 +103,8 @@ Codegeist gives equal weight to platform implementation, coherent design, credib
 
 1. **Persistent source review — implemented, reviewed, deployed and live-verified.** The v1 → v2 review/reopen/change/diff/rereview sequence passed without another Jira comment. Evidence records the actual versions and the remaining untested live failure cases.
 2. **Exact decision-to-description passage link — implemented, reviewed, deployed and core sequence live-verified.** The DD-2 flow passed save/reopen, approval invalidation, context changes, duplicate rejection and explicit rereview of edited linked text through source version 4. Matching text with changed context still needs manual review. Moved-text and unavailable-evidence cases remain locally covered but untested live.
-3. **Selected review queue — implemented, reviewed, deployed and core sequence live-verified.** The native project page passed three mixed batches, validation gates, result clearing and independent read-only checks. All five live queue states, controlled races and denied-user/source-access cases remain to verify. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
-4. **Judge-ready delivery.** Verify installation on a separate site, provide repeatable synthetic setup data, complete the remaining live failure tests, and record an end-to-end demo designed to fit three minutes. Production distribution and submission are later milestones.
+3. **Selected review queue — implemented, reviewed, deployed and core sequence live-verified.** The native project page passed three mixed batches, validation gates, result clearing and independent read-only checks. The judge fixture subsequently displayed all five queue states live. Controlled races and denied-user/source-access cases remain to verify. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
+4. **Judge demo kit — implemented and independently reviewed; setup and human repair live-verified.** The portable fixture, offline verifier and setup/reset guide are complete. Only DD-5 moved from Needs review to Matches review after manual correction and approved rereview. Next verify installation on a separate site, complete remaining failure tests and record the demo. Production distribution and submission are later milestones.
 
 After every implementation, review correctness and the product flow, fix findings, run relevant checks, and commit and push the completed change. No external AI service, paid model call or billing change is needed for passage linking or the selected review queue.
 
@@ -90,7 +114,7 @@ The queue MVP implements these boundaries:
 - Results return only the authorized summary and minimal review metadata, with no source bodies or hashes. An inaccessible row must not prevent accessible rows from completing.
 - Editing the selection or refreshing clears old results; late responses cannot restore an obsolete selection. The MVP has no bulk approval or persistent shared selection. A later private named selection could store issue IDs only.
 
-The next feature is a repeatable judge demo kit: four synthetic issues showing a matching review, changed context, an edited or ambiguous link and an unlinked source, with exact setup/reset steps. Follow it with a separate-site installation check and the remaining live failure cases. This gives a judge a reproducible end-to-end task before we add more features.
+The next verification steps are a separate-site judge installation and the remaining permission/freshness failure cases. Use the declared synthetic task to rehearse the presentation before claiming any measured time saving.
 
 The [live verification runbook](docs/atlassian-setup.md#live-verification-runbook) covers source reads, preview, confirmed writes, permission failures and duplicate submissions. Use synthetic issues and pages in the development site.
 
