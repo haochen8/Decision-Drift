@@ -230,6 +230,18 @@ Record actual versions, states, deployment version and limitations in [the statu
 
 The November 3 sequence above passed on development **2.4.0**: page 1605635 moved through published versions 1–4 and is now reviewed at **version 4**. Both full reloads restored the saved passage pair. The final independent Jira read confirmed the original DD-2 description was exactly unchanged and comments stayed **0 → 0**. [Sanitized passage evidence](evidence/2026-11-03-passage-review.json). For a repeat run, create a new pair or explicitly review the current version before changing it; the existing fixture no longer starts at version 1.
 
+## Selected review queue verification
+
+Open **Decision Drift** from the Jira project's app navigation, rather than from an issue. The native project page is supported in Jira and Jira Service Management. [Official project-page reference](https://developer.atlassian.com/platform/forge/manifest-reference/modules/jira-project-page/).
+
+1. Confirm no product check starts before submitting a selection. Enter one to eight unique keys from that project, separated by commas or new lines. Duplicate keys, a ninth key and malformed keys must be rejected before a resolver call. A different-project key must be rejected by the server before reading issue details.
+2. Check a small synthetic selection, starting with DD-1 and DD-2 on this development site. Inspect the state, reviewed/published versions, check timestamp and distinct **Open DD-1** / **Open DD-2** actions. Both existing fixtures were last reviewed at versions 2 and 4 respectively. Add a deliberately nonexistent key to exercise a partial failure without changing anyone's permissions.
+3. Refresh after a completed check. Previous rows and counters must disappear while fresh authorization runs. Editing the selection must clear results immediately. If edited while pending, an old response must stay hidden, and the new check must wait until that batch finishes.
+4. Open a readable issue through its row action, inspect Decision Drift and perform any review through its existing preview/approval flow. Refresh the queue to observe its new state. Queue refresh itself must never change a baseline, preview, description or comment.
+5. For denied issues, verify that only the submitted key and a generic reason appear. For readable Jira issues with inaccessible Confluence, the fresh Jira summary/link may remain, while source versions are hidden. Do not alter security settings merely to run this check; use an already configured restricted synthetic fixture when available.
+
+The local queue tests exercise all five statuses, history limitations, rate/service/storage failures, consent, privacy and concurrency. They do not establish live cloud results. The maximum is one explicit batch of eight issues with two workers, at most 26 product reads and eight baseline reads, and no background refresh. Keep full API responses and private browser captures out of public evidence.
+
 ## Judge installation later
 
 After the live spike passes, deploy the reviewed build to production:

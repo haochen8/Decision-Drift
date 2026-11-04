@@ -7,12 +7,21 @@ modules:
         function: resolver
       title: Decision Drift
       icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  jira:projectPage:
+    - key: decision-drift-review-queue
+      resource: review-queue
+      render: native
+      resolver:
+        function: resolver
+      title: Decision Drift
   function:
     - key: resolver
       handler: index.handler
 resources:
   - key: main
     path: src/frontend.jsx
+  - key: review-queue
+    path: src/queue-frontend.jsx
 permissions:
   scopes:
     - read:jira-work

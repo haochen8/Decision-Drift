@@ -1,11 +1,13 @@
-import api, { route } from '@forge/api';
+import api, { route, NeedsAuthenticationError } from '@forge/api';
 import { kvs, Filter, FilterConditions } from '@forge/kvs';
 import Resolver from '@forge/resolver';
 import spike from './spike.cjs';
 import drift from './drift.cjs';
+import queue from './queue.cjs';
 
 const { createSpike, SpikeError, sourceFromPage } = spike;
-const { createDrift } = drift;
+const { createDrift, createAuthorizedTracker } = drift;
+const { createQueue } = queue;
 const resolver = new Resolver();
 
 async function checked(response, product, expected = 200) {
@@ -26,6 +28,20 @@ const gateway = {
     const response = await api.asUser().requestJira(route`/rest/api/3/issue/${issueId}?fields=summary,updated,description`);
     const issue = await checked(response, 'Jira');
     return { id: issue.id, key: issue.key, summary: issue.fields?.summary, updated: issue.fields?.updated, description: issue.fields?.description ?? null };
+  },
+  async readProject(projectId) {
+    const response = await api.asUser().requestJira(route`/rest/api/3/project/${projectId}`);
+    const project = await checked(response, 'Jira project');
+    return { id: project.id, key: project.key };
+  },
+  async readIssueByKey(issueKey) {
+    const response = await api.asUser().requestJira(route`/rest/api/3/issue/${issueKey}?fields=summary,updated,description,project`);
+    const issue = await checked(response, 'Jira');
+    return {
+      id: issue.id, key: issue.key, summary: issue.fields?.summary, updated: issue.fields?.updated,
+      description: issue.fields?.description ?? null,
+      project: { id: issue.fields?.project?.id, key: issue.fields?.project?.key }
+    };
   },
   async readSource(pageId, origin) {
     const response = await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?body-format=atlas_doc_format`);
@@ -80,7 +96,11 @@ const baselineStore = {
   }
 };
 const decisionService = createDrift({ gateway, store, baselineStore });
-const handlers = { ...service, ...decisionService };
+const queueService = createQueue({
+  gateway, checkAuthorizedIssue: createAuthorizedTracker({ gateway, baselineStore }),
+  isConsentError: error => error instanceof NeedsAuthenticationError || error?.name === 'NEEDS_AUTHENTICATION_ERR'
+});
+const handlers = { ...service, ...decisionService, ...queueService };
 for (const name of Object.keys(handlers)) {
   resolver.define(name, async ({ context, payload }) => {
     try {

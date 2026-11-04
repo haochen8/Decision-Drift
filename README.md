@@ -2,6 +2,10 @@
 
 A Forge app for software teams that keeps the Confluence decision behind a Jira issue in view. It remembers a reviewed source version, restores that source on the next visit, and checks exact decision and requirement passages selected by the reviewer.
 
+The **Selected review queue** adds a native Jira project page for up to eight unique issues from that project. Each explicit check shows fresh review states, reviewed/published source versions, a check timestamp and an **Open issue** link. An inaccessible issue reveals no cached details; a readable issue with an unavailable source keeps its freshly authorized Jira information. Review and approval remain in the individual issue's Decision Drift panel.
+
+Queue checks are read-only and use two workers per batch, with no polling, automatic retries or saved selection. A full eight-issue batch performs at most 26 product reads and eight baseline reads. Typing does not invoke Forge, and the page waits for a pending batch to finish before starting another. The queue uses the existing app scopes and adds no paid AI service, subscription or storage entity.
+
 The implemented source-review flow stores one shared reviewed source per Jira issue. Inspect a page, review its complete supported text, and explicitly save that version as the comparison point. Subsequent checks show reviewed versus published versions, work-item changes, and bounded text differences fetched from Confluence history with the current user's permissions. Saving a review does not post a Jira comment.
 
 The passage-link feature is deployed and its core review sequence is live-verified. A reviewer can link one exact, unique Confluence passage to one exact, unique passage in the **Jira description**. The server verifies both selections against complete supported text. Durable link records add only a schema version, the description-field identifier, offsets, lengths and hashes; they retain no passage text. Later checks can recover a uniquely matching passage after it moves, flag edited or missing text, reject duplicates, and show unavailable evidence when current text or verified history cannot support the check. Movement and unavailable-evidence cases have local coverage but have not been verified live.
@@ -31,7 +35,7 @@ npm run lint
 
 These commands check local code. They do not prove that the app is registered, deployed, installed or authorized in Atlassian.
 
-`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. All **97 local checks** passed for version 2.4.0: 15 comment-spike, 40 source/passage integration, 9 passage matching, 9 source parsing and 24 real bundled React/UI Kit journeys. Product and storage boundaries in local tests are simulated.
+`npm run lint` runs the same manifest/compilation check as `npm run check`; it is not a separate ESLint check. The suite now includes **131 local checks**: 15 comment-spike, 40 source/passage integration, 9 passage matching, 9 source parsing, 17 queue integration and 41 real bundled React/UI Kit journeys. Product and storage boundaries in local tests are simulated.
 
 ## Connect the app
 
@@ -50,6 +54,8 @@ This checkout is registered as **Decision Drift** in **MyDevSpace** and its mani
 The [small synthetic Jira/Confluence fixture](docs/atlassian-setup.md#5-create-the-synthetic-live-fixture) is already available on this development site: issue **DD-1** and Confluence page **557057**. Saving a reviewed source version updates app state only. Explicitly adding a reviewed Jira note creates another comment.
 
 ## Verification status
+
+**November 4: the selected review queue is implemented and independently reviewed.** The new project-page module passed official Forge lint, and both frontend entries compile. Tests cover the eight-issue boundary, duplicate and cross-project rejection, current-user authorization, exact drift integration, partial failures, consent propagation, read-only behavior and bounded concurrency. Runtime journeys cover selection edits, refresh clearing, late responses and malformed results. Cloud deployment and queue browser verification are pending; the preceding live release is described below.
 
 **The core passage-link sequence passed live in Chrome Incognito on development version 2.4.0.** Source commit [cf7c56c](https://github.com/haochen8/Decision-Drift/commit/cf7c56c) is pushed; deployment succeeded at `2026-11-03T19:07:34.215Z`. All 97 local checks, compilation and official Forge lint passed. The baseline index remains **ACTIVE**, and the existing Jira/Confluence installation is up to date at major version 2 with unchanged scopes.
 
@@ -71,16 +77,18 @@ Codegeist gives equal weight to platform implementation, coherent design, credib
 
 1. **Persistent source review — implemented, reviewed, deployed and live-verified.** The v1 → v2 review/reopen/change/diff/rereview sequence passed without another Jira comment. Evidence records the actual versions and the remaining untested live failure cases.
 2. **Exact decision-to-description passage link — implemented, reviewed, deployed and core sequence live-verified.** The DD-2 flow passed save/reopen, approval invalidation, context changes, duplicate rejection and explicit rereview of edited linked text through source version 4. Matching text with changed context still needs manual review. Moved-text and unavailable-evidence cases remain locally covered but untested live.
-3. **Selected review queue — next planned feature.** Add a native Jira project page for at most eight manually selected, unique issue keys in the current project. This is a selected review scope, not a statement of complete release coverage. The server must resolve keys and derive issue IDs through current-user reads, enforce the project boundary and use bounded concurrency. Show authorized issue summaries, reviewed/current versions, clear review states and an Open issue action. The queue is read-only; each issue retains its existing explicit review flow. It needs no AI service. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
+3. **Selected review queue — implemented and reviewed.** The native project page checks at most eight manually selected issues, with fresh project/issue authorization, two workers, minimal result metadata and an individual review action. Complete the development deployment and browser check before claiming a live release. Measure the complete manual review task against the app on a declared synthetic dataset before claiming time savings.
 4. **Judge-ready delivery.** Verify installation on a separate site, provide repeatable synthetic setup data, complete the remaining live failure tests, and record an end-to-end demo designed to fit three minutes. Production distribution and submission are later milestones.
 
-After every implementation, review correctness and the product flow, fix findings, run relevant checks, and commit and push the completed change. No external AI service, paid model call or billing change is needed for passage linking or the planned release review queue.
+After every implementation, review correctness and the product flow, fix findings, run relevant checks, and commit and push the completed change. No external AI service, paid model call or billing change is needed for passage linking or the selected review queue.
 
-The queue MVP must pass these checks before it is considered complete:
+The queue MVP implements these boundaries:
 
 - Each row reports **Matches review**, **Context changed**, **Needs review**, **Source not linked** or **Could not verify** from fresh permission-checked evidence. It makes no release-readiness claim.
 - Results return only the authorized summary and minimal review metadata, with no source bodies or hashes. An inaccessible row must not prevent accessible rows from completing.
 - Editing the selection or refreshing clears old results; late responses cannot restore an obsolete selection. The MVP has no bulk approval or persistent shared selection. A later private named selection could store issue IDs only.
+
+The next feature is a repeatable judge demo kit: four synthetic issues showing a matching review, changed context, an edited or ambiguous link and an unlinked source, with exact setup/reset steps. Follow it with a separate-site installation check and the remaining live failure cases. This gives a judge a reproducible end-to-end task before we add more features.
 
 The [live verification runbook](docs/atlassian-setup.md#live-verification-runbook) covers source reads, preview, confirmed writes, permission failures and duplicate submissions. Use synthetic issues and pages in the development site.
 

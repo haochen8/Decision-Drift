@@ -1,6 +1,6 @@
 const { randomUUID } = require('node:crypto');
 const {
-  SpikeError, identity, inspectSnapshot, publicView, digest, PREVIEW_MS, UUID, issueEvidenceText
+  SpikeError, identity, inspectSnapshot, publicView, siteOrigin, digest, PREVIEW_MS, UUID, issueEvidenceText
 } = require('./spike.cjs');
 const { validateFocus, sameFocus, prepareFocus, trackFocus, unavailableFocus, MAX_TEXT_LENGTH } = require('./passage.cjs');
 
@@ -62,7 +62,7 @@ function sameReview(baseline, snapshot, focus) {
     baseline.issueHash === issueContentHash(snapshot.issue) && sameFocus(baseline.focus, focus);
 }
 
-function createDrift({ gateway, store, baselineStore, now = Date.now, newId = randomUUID }) {
+function createTrackingReader({ gateway, baselineStore }) {
   const getBaseline = async actor => validateBaseline(await baselineStore.get(baselineKey(actor)));
 
   async function trackingFor(snapshot, baseline) {
@@ -121,6 +121,32 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
     }
     return { status, baseline: publicBaseline, sourceChanged, issueChanged, diff, focus };
   }
+
+  return { getBaseline, trackingFor };
+}
+
+// Server-only adapter for callers that have already read the issue as the
+// current user. It is deliberately separate from the issue-panel resolvers.
+function createAuthorizedTracker({ gateway, baselineStore }) {
+  const { getBaseline, trackingFor } = createTrackingReader({ gateway, baselineStore });
+  return async function checkAuthorizedIssue({ actor, issue, origin }) {
+    const verifiedActor = identity({ ...actor, extension: { issue: { id: actor?.issueId } } });
+    if (String(issue?.id) !== verifiedActor.issueId) fail('INVALID_CONTEXT', 'The authorized issue could not be verified.');
+    const verifiedOrigin = siteOrigin(origin);
+    const baseline = await getBaseline(verifiedActor);
+    if (!baseline) return { tracked: false };
+    const source = await gateway.readSource(baseline.sourceId, verifiedOrigin);
+    if (source?.id !== baseline.sourceId || !Number.isInteger(source.version) || source.version < 1) {
+      fail('INVALID_SOURCE', 'The linked published source could not be verified.');
+    }
+    if (source.version < baseline.sourceVersion) fail('SOURCE_REGRESSION', 'The linked source returned an earlier version than the reviewed comparison point.');
+    const tracking = await trackingFor({ actor: verifiedActor, issue, source, origin: verifiedOrigin }, baseline);
+    return { tracked: true, tracking, sourceVersion: source.version };
+  };
+}
+
+function createDrift({ gateway, store, baselineStore, now = Date.now, newId = randomUUID }) {
+  const { getBaseline, trackingFor } = createTrackingReader({ gateway, baselineStore });
 
   async function view(snapshot, baseline) {
     const result = publicView(snapshot);
@@ -243,4 +269,4 @@ function createDrift({ gateway, store, baselineStore, now = Date.now, newId = ra
   return { loadTrackedSource, inspectDecisionSource, prepareBaseline, confirmBaseline };
 }
 
-module.exports = { createDrift, baselineKey, issueContentHash, lineDiff, MAX_DIFF_LINES, MAX_DIFF_CHANGES };
+module.exports = { createDrift, createAuthorizedTracker, baselineKey, issueContentHash, lineDiff, MAX_DIFF_LINES, MAX_DIFF_CHANGES };

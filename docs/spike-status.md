@@ -1,6 +1,19 @@
 # Technical spike status
 
-## Current feature evidence — November 3, 2026
+## Current feature evidence — November 4, 2026
+
+The **selected review queue is implemented and independently reviewed**. It adds a native Jira project page for one to eight unique current-project issue keys. Cloud deployment and queue browser verification are pending; the latest prior live version remains 2.4.0, recorded below.
+
+- The resolver requires trusted project-page context and freshly verifies the project, then resolves each canonical issue as the signed-in user and checks its actual project ID/key. Caller-supplied project IDs, issue IDs and site URLs do not authorize access.
+- A server-only tracking reader reuses the existing reviewed-source and passage logic with the already authorized Jira snapshot. It is not exposed as a resolver. The queue returns only selected keys, fresh authorized summaries, status/reason, reviewed/current versions, checked-at time and an issue link; it returns no source body, title, quotations, fingerprints or account IDs.
+- The five states are Matches review, Context changed, Needs review, Source not linked and Could not verify. Only a confirmed absent baseline becomes Source not linked. Permission, history, storage, service and rate-limit failures retain unresolved states; Forge consent errors propagate to the host.
+- The page clears results when editing or refreshing, rejects malformed responses, ignores obsolete responses and waits for a pending batch before allowing another check. Runtime review caught and fixed result validation for mismatched issue identity, missing timestamps, a false matching state with inaccessible metadata and a mismatched project.
+- Each explicit batch has at most eight issue checks and two workers, with one project read and one site read. Worst-case product reads are 26, plus eight baseline reads. No polling, automatic retry, writes, new scopes, storage entity, dependency, AI service or billing change is introduced.
+- Local verification includes 131 checks: the prior 97 plus 17 queue integration tests and 17 queue UI/runtime journeys. Compilation of both native frontends, official Forge lint and whitespace checks pass. Local product/storage boundaries remain simulated.
+
+The next feature is a reproducible four-issue synthetic judge demo kit, with setup/reset instructions for all important queue states. A separate-site installation and remaining live failure checks follow. The older selected-queue plan below is retained as the plan that led to this implementation.
+
+## Earlier feature evidence — November 3, 2026
 
 Current status: **the core exact source-to-Jira-description passage-link sequence PASSED live in Chrome Incognito on development version 2.4.0**. Source commit [cf7c56c](https://github.com/haochen8/Decision-Drift/commit/cf7c56c) is pushed. The fresh DD-2/page 1605635 fixture passed explicit passage save, full-reload restoration, preview-approval invalidation, context-change reporting, duplicate rejection and explicit rereview of edited linked text. Its final published/reviewed source version is **4/4**; an independent Jira API comparison confirmed the description was exactly unchanged and comments stayed at **0**. DD-1/page 557057/version 2 was not edited.
 
@@ -101,9 +114,11 @@ The core [Persistent source review verification](atlassian-setup.md#persistent-s
 
 The core [passage review](../README.md#verification-status) sequence is complete on DD-2/page 1605635 at version 4. Live moved-text, unavailable/denied-evidence, stale/expired, concurrent and replay checks remain pending alongside production judge installation.
 
-The next planned feature is a [selected review queue](../README.md#next-features-and-winning-strategy), a read-only native Jira project page for at most eight unique issue keys selected manually from the current project. The server will resolve each key as the viewer, verify its project and derive its issue ID before bounded current-permission source checks. Rows will show an authorized summary, reviewed/current versions, an Open issue action and one of Matches review, Context changed, Needs review, Source not linked or Could not verify. This is a bounded selection, not complete release coverage or a release-readiness verdict.
+### November 3 queue plan — historical
 
-MVP acceptance requires minimal responses with no source bodies or hashes, partial row errors, clearing old results after selection edits or refresh, and ignoring late results for obsolete selections. There will be no queue-wide approval; each issue keeps the existing explicit review flow. Persistent private named selections, storing issue IDs only, are a possible later extension. The queue is planned, not implemented, and needs no AI service.
+The next feature planned on November 3 was a [selected review queue](../README.md#next-features-and-winning-strategy), a read-only native Jira project page for at most eight unique issue keys selected manually from the current project. The server would resolve each key as the viewer, verify its project and derive its issue ID before bounded current-permission source checks. Rows would show an authorized summary, reviewed/current versions, an Open issue action and one of Matches review, Context changed, Needs review, Source not linked or Could not verify. This describes a bounded selection rather than complete release coverage or a release-readiness verdict.
+
+The plan required minimal responses with no source bodies or hashes, partial row errors, clearing old results after selection edits or refresh, and ignoring late results for obsolete selections. Each issue would keep its existing explicit review flow without queue-wide approval. Persistent private named selections, storing issue IDs only, were a possible later extension. The November 4 implementation and verification status are recorded at the top of this document.
 
 ## Historical record — October 29, 2026
 
