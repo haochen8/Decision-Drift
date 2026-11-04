@@ -2,7 +2,7 @@
 
 ## Current feature evidence — November 4, 2026
 
-The **selected review queue is implemented, independently reviewed and deployed as development 2.5.0**. It adds a native Jira project page for one to eight unique current-project issue keys. Deployment succeeded at `2026-11-04T09:44:45.003Z` / 10:44:45.003 CET, and the existing major-version-2 Jira/Confluence installation is up to date. Queue browser verification remains pending; the latest prior live-verified feature remains 2.4.0, recorded below.
+The **core selected review queue sequence PASSED live in regular Chrome on development 2.5.0**. It adds a native Jira project page for one to eight unique current-project issue keys. Deployment succeeded at `2026-11-04T09:44:45.003Z` / 10:44:45.003 CET, and the existing major-version-2 Jira/Confluence installation is up to date. Three mixed live batches verified existing reviewed sources alongside a nonexistent-issue partial failure, with no fixture, baseline, description or comment writes. Earlier 2.4.0 issue-panel evidence remains separately dated below.
 
 - The resolver requires trusted project-page context and freshly verifies the project, then resolves each canonical issue as the signed-in user and checks its actual project ID/key. Caller-supplied project IDs, issue IDs and site URLs do not authorize access.
 - A server-only tracking reader reuses the existing reviewed-source and passage logic with the already authorized Jira snapshot. It is not exposed as a resolver. The queue returns only selected keys, fresh authorized summaries, status/reason, reviewed/current versions, checked-at time and an issue link; it returns no source body, title, quotations, fingerprints or account IDs.
@@ -13,7 +13,25 @@ The **selected review queue is implemented, independently reviewed and deployed 
 
 The tested implementation is published on GitHub as [41bbc26](https://github.com/haochen8/Decision-Drift/commit/41bbc26). GitHub's Git transport rejected three ordinary fast-forward pushes with internal server errors. The authorized fallback created an API commit with the same reviewed file tree, `a9960918afba2abcf856c28c2172825a7ae15c7c`, and advanced main with an expected-parent check. The checkout was synchronized after verifying identical trees; the original local deployment commit `3f59e3e` remains on the local backup branch `codex/review-queue-local-3f59e3e`.
 
-The live queue check did not start. The browser extension was unavailable and native Chrome input was stopped before navigation after fresh-state recovery. No queue request, fixture edit, review or comment was performed. This is a browser-control limitation, not an observed queue failure. See the [sanitized queue record](evidence/2026-11-04-queue-review.json). No payment, billing, subscription, seat, scope or security setting was changed.
+### November 4 core live queue evidence
+
+| Check | Status | Observed evidence and limit |
+| --- | --- | --- |
+| Native project navigation | Passed — regular Chrome | Opened Decision Drift through the actual Jira project sidebar route |
+| Mixed partial-success batches | Passed — three completed checks | Server check times **10:56:46**, **10:57:34** and **10:58:04 CET**; DD-1 Matches review at `2/2`, DD-2 at `4/4`, nonexistent DD-999999 Could not verify |
+| Unavailable-issue response | Passed — nonexistent issue only | DD-999999 displayed no summary, reviewed/current versions or issue link; this was not a denied-user test |
+| Selection validation | Passed — live client/server gates | Duplicate and ninth-key inputs disabled checking; OTHER-1 was rejected by the server with `WRONG_PROJECT` |
+| Selection edit | Passed — native UI | Editing the selection cleared existing results |
+| Explicit refresh | Passed — native UI | Rows and counters cleared while the check was pending, then fresh results loaded |
+| Issue navigation destination | Target verified; new-tab creation not verified | Row link href and manually opened Jira issue destination verified; automation could not locate a new tab after clicking the row action |
+| Independent read-only confirmation | Passed — authenticated Jira API comparison | Both descriptions exactly unchanged; DD-1 comments `1 → 1`, DD-2 `0 → 0`; no fixture edits or reviews saved |
+| Denied-user / inaccessible-Confluence behavior | Not run live | A deliberately nonexistent Jira issue does not establish these permission cases |
+| All five queue states | Not run live | These batches established Matches review and Could not verify; the complete synthetic state set remains to verify |
+| Controlled late-response / concurrency races | Not run live | Local/runtime coverage remains separate from controlled live timing |
+
+See the [sanitized queue record](evidence/2026-11-04-queue-review.json). The regular-profile issue panel still has its previously observed loading issue; the project queue works in that profile. Incognito issue-panel recovery is in progress, with no new result claimed here. No payment, billing, subscription, seat, scope or security setting was changed.
+
+An earlier attempt did not start: the browser extension was unavailable and native Chrome input was stopped before navigation after fresh-state recovery. No queue request or write ran during that attempt. Browser control subsequently resumed and the successful sequence above supersedes that prerequisite as the current status.
 
 The next feature is a reproducible four-issue synthetic judge demo kit, with setup/reset instructions for all important queue states. A separate-site installation and remaining live failure checks follow. The older selected-queue plan below is retained as the plan that led to this implementation.
 

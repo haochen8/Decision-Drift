@@ -42,17 +42,35 @@
     "forcedUpdate": false
   },
   "liveQueueVerification": {
-    "status": "not_started",
-    "reason": "Browser control unavailable before navigation; extension unavailable and native input stopped before dispatch after recovery",
-    "queueProductRequestsRun": 0,
+    "status": "core_sequence_passed",
+    "browser": "Regular Chrome",
+    "projectNavigationVerified": true,
+    "successfulBatches": 3,
+    "selectedKeys": ["DD-1", "DD-2", "DD-999999"],
+    "results": [
+      {"key": "DD-1", "status": "matches_review", "reviewedVersion": 2, "publishedVersion": 2},
+      {"key": "DD-2", "status": "matches_review", "reviewedVersion": 4, "publishedVersion": 4},
+      {"key": "DD-999999", "status": "could_not_verify", "summaryVisible": false, "versionsVisible": false, "issueLinkVisible": false}
+    ],
+    "observedCheckTimesCET": ["2026-11-04 10:56:46", "2026-11-04 10:57:34", "2026-11-04 10:58:04"],
+    "duplicateSelectionRejected": true,
+    "ninthIssueRejected": true,
+    "crossProjectRejectedWith": "WRONG_PROJECT",
+    "selectionEditClearedResults": true,
+    "refreshClearedRowsAndCountersWhilePending": true,
+    "freshIssueNavigationTargetVerified": true,
     "fixtureEdits": 0,
     "reviewsSaved": 0,
-    "commentsAdded": 0
+    "commentsAdded": 0,
+    "independentJiraComparison": {
+      "DD-1": {"descriptionJsonUnchanged": true, "commentsBefore": 1, "commentsAfter": 1},
+      "DD-2": {"descriptionJsonUnchanged": true, "commentsBefore": 0, "commentsAfter": 0}
+    },
+    "earlierAttempt": "Browser control was unavailable before navigation; no queue request ran during that earlier attempt."
   },
   "notVerifiedLive": [
-    "Project page navigation and actual resolver project context",
-    "Selection rendering and refresh on the development site",
-    "Partial access failures in the live queue",
+    "Denied-user or inaccessible-Confluence behavior (the unavailable live issue was deliberately nonexistent)",
+    "Late-response and concurrency races under controlled live timing",
     "All five queue states on a synthetic live dataset",
     "Separate-site production judge installation"
   ],
